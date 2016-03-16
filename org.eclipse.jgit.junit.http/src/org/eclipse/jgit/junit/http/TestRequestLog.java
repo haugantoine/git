@@ -68,14 +68,14 @@ class TestRequestLog extends HandlerWrapper {
   /** Reset the log back to its original empty state. */
   void clear() {
     try {
-      for (;;) {
-        try {
-          active.acquire(MAX);
-          break;
-        } catch (InterruptedException e) {
-          continue;
-        }
-      }
+			for (;;) {
+				try {
+					active.acquire(MAX);
+					break;
+				} catch (InterruptedException e) {
+					continue;
+				}
+			}
 
       synchronized (events) {
         events.clear();
@@ -85,10 +85,10 @@ class TestRequestLog extends HandlerWrapper {
     }
   }
 
-  /** @return all of the events made since the last clear. */
-  List<AccessEvent> getEvents() {
-    try {
-      for (;;) {
+	/** @return all of the events made since the last clear. */
+	List<AccessEvent> getEvents() {
+		try {
+			for (;;) {
         try {
           active.acquire(MAX);
           break;
@@ -109,14 +109,14 @@ class TestRequestLog extends HandlerWrapper {
   public void handle(String target, Request baseRequest, HttpServletRequest request,
       HttpServletResponse response) throws IOException, ServletException {
     try {
-      for (;;) {
-        try {
-          active.acquire();
-          break;
-        } catch (InterruptedException e) {
-          continue;
-        }
-      }
+			for (;;) {
+				try {
+					active.acquire();
+					break;
+				} catch (InterruptedException e) {
+					continue;
+				}
+			}
 
       super.handle(target, baseRequest, request, response);
 

@@ -122,6 +122,11 @@
       <artifactId>log4j</artifactId>
       <version>${log4j-version}</version>
     </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

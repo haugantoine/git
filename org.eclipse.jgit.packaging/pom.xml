@@ -81,7 +81,7 @@
     <module>org.eclipse.jgit.pgm.feature</module>
     <module>org.eclipse.jgit.source.feature</module>
     <module>org.eclipse.jgit.pgm.source.feature</module>
-    <module>org.eclipse.jgit.junit.feature</module>
+<!--     <module>org.eclipse.jgit.junit.feature</module> -->
     <module>org.eclipse.jgit.repository</module>
   </modules>
 

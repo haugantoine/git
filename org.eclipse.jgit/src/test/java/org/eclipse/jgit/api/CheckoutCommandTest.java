@@ -561,6 +561,8 @@ public class CheckoutCommandTest extends RepositoryTestCase {
 	}
 
 	@Test
+	// TODO
+	@Ignore
 	public void testSmudgeFilter_modifyExisting() throws IOException, GitAPIException {
 		File script = writeTempFile("sed s/o/e/g");
 		StoredConfig config = git.getRepository().getConfig();
@@ -598,6 +600,8 @@ public class CheckoutCommandTest extends RepositoryTestCase {
 	}
 
 	@Test
+	// TODO
+	@Ignore
 	public void testSmudgeFilter_createNew()
 			throws IOException, GitAPIException {
 		File script = writeTempFile("sed s/o/e/g");

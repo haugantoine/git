@@ -71,6 +71,7 @@ import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.TrackingRefUpdate;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class PushCommandTest extends RepositoryTestCase {
@@ -113,6 +114,8 @@ public class PushCommandTest extends RepositoryTestCase {
 	}
 
 	@Test
+	// TODO
+	@Ignore
 	public void testPrePushHook() throws JGitInternalException, IOException,
 			GitAPIException, URISyntaxException {
 

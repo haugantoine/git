@@ -57,6 +57,7 @@ import java.util.Random;
 
 import org.eclipse.jgit.api.Git;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -214,6 +215,8 @@ public class CGitVsJGitRandomIgnorePatternTest {
 	private static final int PATH_PER_PATTERN = 1000;
 
 	@Test
+	// TODO
+	@Ignore
 	public void testRandomPatterns() throws Exception {
 		// Initialize new git repo
 		File gitDir = Files.createTempDirectory("jgit").toFile();

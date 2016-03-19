@@ -65,8 +65,10 @@ import org.eclipse.jgit.lib.NullProgressMonitor;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.pack.PackConfig;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class GcCommitSelectionTest extends GcTestCase {
 
 	@Test

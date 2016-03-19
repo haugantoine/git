@@ -75,8 +75,6 @@
   </dependencies>
 
   <build>
-    <sourceDirectory>src/</sourceDirectory>
-
     <resources>
       <resource>
         <directory>.</directory>
@@ -84,9 +82,6 @@
           <include>plugin.properties</include>
           <include>about.html</include>
         </includes>
-      </resource>
-      <resource>
-        <directory>resources/</directory>
       </resource>
     </resources>
 

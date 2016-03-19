@@ -125,13 +125,10 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
   <build>
-    <sourceDirectory>src/</sourceDirectory>
-
     <resources>
       <resource>
         <directory>.</directory>
@@ -140,9 +137,6 @@
           <include>META-INF/services/org.eclipse.jgit.pgm.TextBuiltin</include>
           <include>about.html</include>
         </includes>
-      </resource>
-      <resource>
-        <directory>resources/</directory>
       </resource>
     </resources>
 

@@ -123,19 +123,6 @@ public class TagCommandTest extends RepositoryTestCase {
 	}
 
 	@Test
-	public void testFailureOnSignedTags() throws GitAPIException {
-		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
-			try {
-				git.tag().setSigned(true).setName("tag").call();
-				fail("We should have failed with an UnsupportedOperationException due to signed tag");
-			} catch (UnsupportedOperationException e) {
-				// should hit here
-			}
-		}
-	}
-
-	@Test
 	public void testDelete() throws Exception {
 		try (Git git = new Git(db)) {
 			git.commit().setMessage("initial commit").call();

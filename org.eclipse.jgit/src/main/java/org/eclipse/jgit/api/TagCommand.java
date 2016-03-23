@@ -60,7 +60,6 @@ import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.lib.TagBuilder;
 import org.eclipse.jgit.revwalk.RevObject;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -97,8 +96,6 @@ public class TagCommand extends GitCommand<Ref> {
 
 	private PersonIdent tagger;
 
-	private boolean signed;
-
 	private boolean forceUpdate;
 
 	private boolean annotated = true;
@@ -125,8 +122,7 @@ public class TagCommand extends GitCommand<Ref> {
 			InvalidTagNameException, NoHeadException {
 		checkCallable();
 
-		RepositoryState state = repo.getRepositoryState();
-		processOptions(state);
+		processOptions();
 
 		try (RevWalk revWalk = new RevWalk(repo)) {
 			// if no id is set, we should attempt to use HEAD
@@ -184,7 +180,7 @@ public class TagCommand extends GitCommand<Ref> {
 		switch (updateResult) {
 		case NEW:
 		case FORCED:
-			return repo.getRef(refName);
+			return repo.findRef(refName);
 		case LOCK_FAILURE:
 			throw new ConcurrentRefUpdateException(
 					JGitText.get().couldNotLockHEAD, tagRef.getRef(),
@@ -208,10 +204,8 @@ public class TagCommand extends GitCommand<Ref> {
 	 *
 	 * @throws InvalidTagNameException
 	 *             if the tag name is null or invalid
-	 * @throws UnsupportedOperationException
-	 *             if the tag is signed (not supported yet)
 	 */
-	private void processOptions(RepositoryState state)
+	private void processOptions()
 			throws InvalidTagNameException {
 		if (tagger == null && annotated)
 			tagger = new PersonIdent(repo);
@@ -219,9 +213,6 @@ public class TagCommand extends GitCommand<Ref> {
 			throw new InvalidTagNameException(
 					MessageFormat.format(JGitText.get().tagNameInvalid,
 							name == null ? "<null>" : name)); //$NON-NLS-1$
-		if (signed)
-			throw new UnsupportedOperationException(
-					JGitText.get().signingNotSupportedOnTag);
 	}
 
 	/**
@@ -257,25 +248,6 @@ public class TagCommand extends GitCommand<Ref> {
 	public TagCommand setMessage(String message) {
 		checkCallable();
 		this.message = message;
-		return this;
-	}
-
-	/**
-	 * @return whether the tag is signed
-	 */
-	public boolean isSigned() {
-		return signed;
-	}
-
-	/**
-	 * If set to true the Tag command creates a signed tag object. This
-	 * corresponds to the parameter -s on the command line.
-	 *
-	 * @param signed
-	 * @return {@code this}
-	 */
-	public TagCommand setSigned(boolean signed) {
-		this.signed = signed;
 		return this;
 	}
 

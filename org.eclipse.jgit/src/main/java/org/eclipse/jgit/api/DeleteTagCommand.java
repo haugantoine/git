@@ -90,35 +90,33 @@ public class DeleteTagCommand extends GitCommand<List<String>> {
 			for (String tagName : tags) {
 				if (tagName == null)
 					continue;
-				Ref currentRef = repo.getRef(tagName);
+				Ref currentRef = repo.findRef(tagName);
 				if (currentRef == null)
 					continue;
 				String fullName = currentRef.getName();
 				RefUpdate update = repo.updateRef(fullName);
 				update.setForceUpdate(true);
 				Result deleteResult = update.delete();
-
-				boolean ok = true;
-				switch (deleteResult) {
-				case IO_FAILURE:
-				case LOCK_FAILURE:
-				case REJECTED:
-					ok = false;
-					break;
-				default:
-					break;
-				}
-
-				if (ok) {
-					result.add(fullName);
-				} else
+				if (!isDeleteSucceed(deleteResult))
 					throw new JGitInternalException(MessageFormat.format(
 							JGitText.get().deleteTagUnexpectedResult,
 							deleteResult.name()));
+				result.add(fullName);
 			}
 			return result;
 		} catch (IOException ioe) {
 			throw new JGitInternalException(ioe.getMessage(), ioe);
+		}
+	}
+
+	private boolean isDeleteSucceed(Result deleteResult) {
+		switch (deleteResult) {
+		case IO_FAILURE:
+		case LOCK_FAILURE:
+		case REJECTED:
+			return false;
+		default:
+			return true;
 		}
 	}
 

@@ -216,7 +216,11 @@ public class AddCommand extends GitCommand<DirCache> {
 				FileMode mode = f.getIndexFileMode(c);
 				entry.setFileMode(mode);
 
-				if (GITLINK != mode) {
+				if (GITLINK == mode) {
+					entry.setLength(0);
+					entry.setLastModified(0);
+					entry.setObjectId(f.getEntryObjectId());
+				} else {
 					entry.setLength(f.getEntryLength());
 					entry.setLastModified(f.getEntryLastModified());
 					long len = f.getEntryContentLength();
@@ -224,10 +228,6 @@ public class AddCommand extends GitCommand<DirCache> {
 						ObjectId id = inserter.insert(OBJ_BLOB, len, in);
 						entry.setObjectId(id);
 					}
-				} else {
-					entry.setLength(0);
-					entry.setLastModified(0);
-					entry.setObjectId(f.getEntryObjectId());
 				}
 				builder.add(entry);
 				lastAdded = path;

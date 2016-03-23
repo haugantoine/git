@@ -146,13 +146,12 @@ public class CreateBranchCommand extends GitCommand<Ref> {
 			String baseBranch = ""; //$NON-NLS-1$
 			if (startPointFullName == null) {
 				String baseCommit;
-				if (startCommit != null)
-					baseCommit = startCommit.getShortMessage();
-				else {
+				if (startCommit == null) {
 					RevCommit commit = revWalk.parseCommit(repo
 							.resolve(getStartPointOrHead()));
 					baseCommit = commit.getShortMessage();
-				}
+				} else
+					baseCommit = startCommit.getShortMessage();
 				if (exists)
 					refLogMessage = "branch: Reset start-point to commit " //$NON-NLS-1$
 							+ baseCommit;

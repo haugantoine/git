@@ -57,7 +57,7 @@ import org.eclipse.jgit.transport.URIish;
 
 public class AbstractRemoteCommandTest extends RepositoryTestCase {
 
-	protected static final String REMOTE_NAME = "test";
+	protected static final String REMOTE_NAME = "test"; //$NON-NLS-1$
 
 	protected RemoteConfig setupRemote()
 			throws IOException, URISyntaxException {

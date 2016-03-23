@@ -300,17 +300,13 @@ public class CloneCommand extends TransportCommand<CloneCommand, Git> {
 			return master;
 		}
 
-		Ref foundBranch = null;
-		for (final Ref r : result.getAdvertisedRefs()) {
-			final String n = r.getName();
-			if (!n.startsWith(Constants.R_HEADS))
-				continue;
-			if (headId.equals(r.getObjectId())) {
-				foundBranch = r;
-				break;
+		for (final Ref advertisedRef : result.getAdvertisedRefs()) {
+			if (advertisedRef.getName().startsWith(Constants.R_HEADS)
+					&& headId.equals(advertisedRef.getObjectId())) {
+				return advertisedRef;
 			}
 		}
-		return foundBranch;
+		return null;
 	}
 
 	private void addMergeConfig(Repository clonedRepo, Ref head)
@@ -334,11 +330,9 @@ public class CloneCommand extends TransportCommand<CloneCommand, Git> {
 	private RevCommit parseCommit(final Repository clonedRepo, final Ref ref)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException {
-		final RevCommit commit;
 		try (final RevWalk rw = new RevWalk(clonedRepo)) {
-			commit = rw.parseCommit(ref.getObjectId());
+			return rw.parseCommit(ref.getObjectId());
 		}
-		return commit;
 	}
 
 	/**

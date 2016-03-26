@@ -68,8 +68,10 @@ import org.eclipse.jgit.lib.RefUpdate.Result;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class GcPackRefsTest extends GcTestCase {
 	@Test
 	public void looseRefPacked() throws Exception {

@@ -502,7 +502,7 @@ public class TestRepository<R extends Repository> {
 	 */
 	public CommitBuilder amendRef(String ref) throws Exception {
 		String name = normalizeRef(ref);
-		Ref r = db.getRef(name);
+		Ref r = db.findRef(name);
 		if (r == null)
 			throw new IOException("Not a ref: " + ref);
 		return amend(pool.parseCommit(r.getObjectId()), branch(name).commit());
@@ -679,7 +679,7 @@ public class TestRepository<R extends Repository> {
 		RevCommit parent = commit.getParent(0);
 		pool.parseHeaders(parent);
 
-		Ref headRef = db.getRef(Constants.HEAD);
+		Ref headRef = db.findRef(Constants.HEAD);
 		if (headRef == null)
 			throw new IOException("Missing HEAD");
 		RevCommit head = pool.parseCommit(headRef.getObjectId());
@@ -992,7 +992,7 @@ public class TestRepository<R extends Repository> {
 		CommitBuilder(BranchBuilder b) throws Exception {
 			branch = b;
 
-			Ref ref = db.getRef(branch.ref);
+			Ref ref = db.findRef(branch.ref);
 			if (ref != null && ref.getObjectId() != null)
 				parent(pool.parseCommit(ref.getObjectId()));
 		}

@@ -426,7 +426,7 @@ public abstract class Repository implements AutoCloseable {
 		try (RevWalk rw = new RevWalk(this)) {
 			Object resolved = resolve(rw, revstr);
 			if (resolved instanceof String) {
-				final Ref ref = getRef((String)resolved);
+				final Ref ref = findRef((String) resolved);
 				return ref != null ? ref.getLeaf().getObjectId() : null;
 			} else {
 				return (ObjectId) resolved;
@@ -646,7 +646,7 @@ public abstract class Repository implements AutoCloseable {
 							name = Constants.HEAD;
 						if (!Repository.isValidRefName("x/" + name)) //$NON-NLS-1$
 							throw new RevisionSyntaxException(revstr);
-						Ref ref = getRef(name);
+						Ref ref = findRef(name);
 						name = null;
 						if (ref == null)
 							return null;
@@ -696,7 +696,7 @@ public abstract class Repository implements AutoCloseable {
 							name = Constants.HEAD;
 						if (!Repository.isValidRefName("x/" + name)) //$NON-NLS-1$
 							throw new RevisionSyntaxException(revstr);
-						Ref ref = getRef(name);
+						Ref ref = findRef(name);
 						name = null;
 						if (ref == null)
 							return null;
@@ -745,7 +745,7 @@ public abstract class Repository implements AutoCloseable {
 		name = revstr.substring(done);
 		if (!Repository.isValidRefName("x/" + name)) //$NON-NLS-1$
 			throw new RevisionSyntaxException(revstr);
-		if (getRef(name) != null)
+		if (findRef(name) != null)
 			return name;
 		return resolveSimple(name);
 	}
@@ -910,7 +910,7 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	@Nullable
 	public String getFullBranch() throws IOException {
-		Ref head = getRef(Constants.HEAD);
+		Ref head = findRef(Constants.HEAD);
 		if (head == null) {
 			return null;
 		}

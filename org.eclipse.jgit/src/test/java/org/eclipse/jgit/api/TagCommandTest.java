@@ -60,24 +60,50 @@ import org.junit.Test;
 
 public class TagCommandTest extends RepositoryTestCase {
 
+	private static final String REFS_TAGS = "refs/tags/"; //$NON-NLS-1$
+
+	private static final String TAG_V10 = "v10"; //$NON-NLS-1$
+
+	private static final String TAG_V2 = "v2"; //$NON-NLS-1$
+
+	private static final String TAG_V3 = "v3"; //$NON-NLS-1$
+
+	private static final String FILEPATTERN = "*"; //$NON-NLS-1$
+
+	private static final String WE_SHOULD_HAVE_FAILED_DUE_TO_A_BAD_TAG_NAME = "We should have failed due to a bad tag name"; //$NON-NLS-1$
+
+	private static final String BAD_TAG_NAME = "bad~tag~name"; //$NON-NLS-1$
+
+	private static final String WE_SHOULD_HAVE_FAILED_WITHOUT_A_TAG_NAME = "We should have failed without a tag name"; //$NON-NLS-1$
+
+	private static final String SOME_MESSAGE = "some message"; //$NON-NLS-1$
+
+	private static final String THIRD_COMMIT_MESSAGE = "third commit"; //$NON-NLS-1$
+
+	private static final String SECOND_COMMIT_MESSAGE = "second commit"; //$NON-NLS-1$
+
+	private static final String TAG_NAME = "tag"; //$NON-NLS-1$
+
+	private static final String INITIAL_COMMIT_MESSAGE = "initial commit"; //$NON-NLS-1$
+
 	@Test
 	public void testTaggingOnHead() throws GitAPIException, IOException {
 		try (Git git = new Git(db);
 				RevWalk walk = new RevWalk(db)) {
-			RevCommit commit = git.commit().setMessage("initial commit").call();
-			Ref tagRef = git.tag().setName("tag").call();
+			RevCommit commit = git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
+			Ref tagRef = git.tag().setName(TAG_NAME).call();
 			assertEquals(commit.getId(), db.peel(tagRef).getPeeledObjectId());
-			assertEquals("tag", walk.parseTag(tagRef.getObjectId()).getTagName());
+			assertEquals(TAG_NAME, walk.parseTag(tagRef.getObjectId()).getTagName());
 		}
 	}
 
 	@Test
 	public void testTagging() throws GitAPIException, JGitInternalException {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
-			RevCommit commit = git.commit().setMessage("second commit").call();
-			git.commit().setMessage("third commit").call();
-			Ref tagRef = git.tag().setObjectId(commit).setName("tag").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
+			RevCommit commit = git.commit().setMessage(SECOND_COMMIT_MESSAGE).call();
+			git.commit().setMessage(THIRD_COMMIT_MESSAGE).call();
+			Ref tagRef = git.tag().setObjectId(commit).setName(TAG_NAME).call();
 			assertEquals(commit.getId(), db.peel(tagRef).getPeeledObjectId());
 		}
 	}
@@ -86,10 +112,10 @@ public class TagCommandTest extends RepositoryTestCase {
 	public void testUnannotatedTagging() throws GitAPIException,
 			JGitInternalException {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
-			RevCommit commit = git.commit().setMessage("second commit").call();
-			git.commit().setMessage("third commit").call();
-			Ref tagRef = git.tag().setObjectId(commit).setName("tag")
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
+			RevCommit commit = git.commit().setMessage(SECOND_COMMIT_MESSAGE).call();
+			git.commit().setMessage(THIRD_COMMIT_MESSAGE).call();
+			Ref tagRef = git.tag().setObjectId(commit).setName(TAG_NAME)
 					.setAnnotated(false).call();
 			assertEquals(commit.getId(), tagRef.getObjectId());
 		}
@@ -98,11 +124,11 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testEmptyTagName() throws GitAPIException {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 			try {
 				// forget to tag name
-				git.tag().setMessage("some message").call();
-				fail("We should have failed without a tag name");
+				git.tag().setMessage(SOME_MESSAGE).call();
+				fail(WE_SHOULD_HAVE_FAILED_WITHOUT_A_TAG_NAME);
 			} catch (InvalidTagNameException e) {
 				// should hit here
 			}
@@ -112,10 +138,10 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testInvalidTagName() throws GitAPIException {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 			try {
-				git.tag().setName("bad~tag~name").setMessage("some message").call();
-				fail("We should have failed due to a bad tag name");
+				git.tag().setName(BAD_TAG_NAME).setMessage(SOME_MESSAGE).call();
+				fail(WE_SHOULD_HAVE_FAILED_DUE_TO_A_BAD_TAG_NAME);
 			} catch (InvalidTagNameException e) {
 				// should hit here
 			}
@@ -125,8 +151,8 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testDelete() throws Exception {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
-			Ref tagRef = git.tag().setName("tag").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
+			Ref tagRef = git.tag().setName(TAG_NAME).call();
 			assertEquals(1, db.getTags().size());
 
 			List<String> deleted = git.tagDelete().setTags(tagRef.getName())
@@ -135,8 +161,8 @@ public class TagCommandTest extends RepositoryTestCase {
 			assertEquals(tagRef.getName(), deleted.get(0));
 			assertEquals(0, db.getTags().size());
 
-			Ref tagRef1 = git.tag().setName("tag1").call();
-			Ref tagRef2 = git.tag().setName("tag2").call();
+			Ref tagRef1 = git.tag().setName(TAG_NAME + 1).call();
+			Ref tagRef2 = git.tag().setName(TAG_NAME + 2).call();
 			assertEquals(2, db.getTags().size());
 			deleted = git.tagDelete().setTags(tagRef1.getName(), tagRef2.getName())
 					.call();
@@ -148,8 +174,8 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testDeleteFullName() throws Exception {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
-			Ref tagRef = git.tag().setName("tag").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
+			Ref tagRef = git.tag().setName(TAG_NAME).call();
 			assertEquals(1, db.getTags().size());
 
 			List<String> deleted = git.tagDelete()
@@ -163,7 +189,7 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testDeleteEmptyTagNames() throws Exception {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 
 			List<String> deleted = git.tagDelete().setTags().call();
 			assertEquals(0, deleted.size());
@@ -173,9 +199,9 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testDeleteNonExisting() throws Exception {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 
-			List<String> deleted = git.tagDelete().setTags("tag").call();
+			List<String> deleted = git.tagDelete().setTags(TAG_NAME).call();
 			assertEquals(0, deleted.size());
 		}
 	}
@@ -183,9 +209,9 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testDeleteBadName() throws Exception {
 		try (Git git = new Git(db)) {
-			git.commit().setMessage("initial commit").call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 
-			List<String> deleted = git.tagDelete().setTags("bad~tag~name")
+			List<String> deleted = git.tagDelete().setTags(BAD_TAG_NAME)
 					.call();
 			assertEquals(0, deleted.size());
 		}
@@ -195,8 +221,8 @@ public class TagCommandTest extends RepositoryTestCase {
 	public void testShouldNotBlowUpIfThereAreNoTagsInRepository()
 			throws Exception {
 		try (Git git = new Git(db)) {
-			git.add().addFilepattern("*").call();
-			git.commit().setMessage("initial commit").call();
+			git.add().addFilepattern(FILEPATTERN).call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 			List<Ref> list = git.tagList().call();
 			assertEquals(0, list.size());
 		}
@@ -214,19 +240,19 @@ public class TagCommandTest extends RepositoryTestCase {
 	@Test
 	public void testListAllTagsInRepositoryInOrder() throws Exception {
 		try (Git git = new Git(db)) {
-			git.add().addFilepattern("*").call();
-			git.commit().setMessage("initial commit").call();
+			git.add().addFilepattern(FILEPATTERN).call();
+			git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 
-			git.tag().setName("v3").call();
-			git.tag().setName("v2").call();
-			git.tag().setName("v10").call();
+			git.tag().setName(TAG_V3).call();
+			git.tag().setName(TAG_V2).call();
+			git.tag().setName(TAG_V10).call();
 
 			List<Ref> list = git.tagList().call();
 
 			assertEquals(3, list.size());
-			assertEquals("refs/tags/v10", list.get(0).getName());
-			assertEquals("refs/tags/v2", list.get(1).getName());
-			assertEquals("refs/tags/v3", list.get(2).getName());
+			assertEquals(REFS_TAGS + TAG_V10, list.get(0).getName());
+			assertEquals(REFS_TAGS + TAG_V2, list.get(1).getName());
+			assertEquals(REFS_TAGS + TAG_V3, list.get(2).getName());
 		}
 	}
 

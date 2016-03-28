@@ -129,17 +129,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>.</directory>
-        <includes>
-          <include>plugin.properties</include>
-          <include>META-INF/services/org.eclipse.jgit.pgm.TextBuiltin</include>
-          <include>about.html</include>
-        </includes>
-      </resource>
-    </resources>
-
     <plugins>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>

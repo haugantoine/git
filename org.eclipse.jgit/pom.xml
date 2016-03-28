@@ -96,17 +96,6 @@
   </dependencies>
 
   <build>
-    <resources>
-      <resource>
-        <directory>.</directory>
-        <includes>
-          <include>plugin.properties</include>
-          <include>about.html</include>
-		  <include>META-INF/eclipse.inf</include>
-        </includes>
-      </resource>
-    </resources>
-
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

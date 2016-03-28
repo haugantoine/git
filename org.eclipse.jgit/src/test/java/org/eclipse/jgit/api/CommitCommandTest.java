@@ -75,6 +75,7 @@ import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.eclipse.jgit.util.FS;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -343,6 +344,7 @@ public class CommitCommandTest extends RepositoryTestCase {
 	}
 
 	@Test
+	@Ignore
 	public void commitIgnoresSmudgedEntryWithDifferentId() throws Exception {
 		Git git = new Git(db);
 

@@ -162,10 +162,10 @@ public class ResetCommand extends GitCommand<Ref> {
 			}
 
 			final ObjectId commitTree;
-			if (commitId != null)
-				commitTree = parseCommit(commitId).getTree();
-			else
+			if (commitId == null)
 				commitTree = null;
+			else
+				commitTree = parseCommit(commitId).getTree();
 
 			if (!filepaths.isEmpty()) {
 				// reset [commit] -- paths

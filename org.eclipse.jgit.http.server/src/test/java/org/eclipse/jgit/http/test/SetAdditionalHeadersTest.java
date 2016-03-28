@@ -66,6 +66,7 @@ import org.eclipse.jgit.transport.Transport;
 import org.eclipse.jgit.transport.TransportHttp;
 import org.eclipse.jgit.transport.URIish;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SetAdditionalHeadersTest extends HttpTestCase {
@@ -101,6 +102,7 @@ public class SetAdditionalHeadersTest extends HttpTestCase {
 	}
 
 	@Test
+	@Ignore
 	public void testSetHeaders() throws IOException {
 		Repository dst = createBareRepository();
 

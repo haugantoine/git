@@ -359,7 +359,7 @@ public class PathCheckoutCommandTest extends RepositoryTestCase {
 		git.merge().include(side).call();
 		assertEquals(RepositoryState.MERGING, db.getRepositoryState());
 
-		DirCache cache = DirCache.read(db.getIndexFile(), db.getFS());
+		DirCache cache = DirCache.read(db.getIndexFile());
 		assertEquals("Expected add/add file to not have base stage",
 				DirCacheEntry.STAGE_2, cache.getEntry(file).getStage());
 
@@ -369,7 +369,7 @@ public class PathCheckoutCommandTest extends RepositoryTestCase {
 
 		assertEquals("Added on master", read(file));
 
-		cache = DirCache.read(db.getIndexFile(), db.getFS());
+		cache = DirCache.read(db.getIndexFile());
 		assertEquals("Expected conflict stages to still exist after checkout",
 				DirCacheEntry.STAGE_2, cache.getEntry(file).getStage());
 	}
@@ -394,7 +394,7 @@ public class PathCheckoutCommandTest extends RepositoryTestCase {
 	}
 
 	private void assertStageOneToThree(String name) throws Exception {
-		DirCache cache = DirCache.read(db.getIndexFile(), db.getFS());
+		DirCache cache = DirCache.read(db.getIndexFile());
 		int i = cache.findEntry(name);
 		DirCacheEntry stage1 = cache.getEntry(i);
 		DirCacheEntry stage2 = cache.getEntry(i + 1);

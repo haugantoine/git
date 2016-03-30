@@ -644,7 +644,7 @@ public class BaseRepositoryBuilder<B extends BaseRepositoryBuilder, R extends Re
 	 * @throws IOException
 	 *             the repository could not be accessed
 	 */
-	protected void setupInternals() throws IOException {
+	protected void setupInternals() {
 		if (getObjectDirectory() == null && getGitDir() != null)
 			setObjectDirectory(safeFS().resolve(getGitDir(), "objects")); //$NON-NLS-1$
 	}

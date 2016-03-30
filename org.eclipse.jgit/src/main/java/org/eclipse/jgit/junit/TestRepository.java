@@ -147,7 +147,7 @@ public class TestRepository<R extends Repository> {
 	 *            the test repository to write into.
 	 * @throws IOException
 	 */
-	public TestRepository(R db) throws IOException {
+	public TestRepository(R db) {
 		this(db, new RevWalk(db), new MockSystemReader());
 	}
 
@@ -160,7 +160,7 @@ public class TestRepository<R extends Repository> {
 	 *            the RevObject pool to use for object lookup.
 	 * @throws IOException
 	 */
-	public TestRepository(R db, RevWalk rw) throws IOException {
+	public TestRepository(R db, RevWalk rw) {
 		this(db, rw, new MockSystemReader());
 	}
 
@@ -177,8 +177,7 @@ public class TestRepository<R extends Repository> {
 	 * @throws IOException
 	 * @since 4.2
 	 */
-	public TestRepository(R db, RevWalk rw, MockSystemReader reader)
-			throws IOException {
+	public TestRepository(R db, RevWalk rw, MockSystemReader reader) {
 		this.db = db;
 		this.git = Git.wrap(db);
 		this.pool = rw;
@@ -198,8 +197,9 @@ public class TestRepository<R extends Repository> {
 
 	/**
 	 * @return an API wrapper for the underlying repository. This wrapper does
-	 *         not allocate any new resources and need not be closed (but closing
-	 *         it is harmless). */
+	 *         not allocate any new resources and need not be closed (but
+	 *         closing it is harmless).
+	 */
 	public Git git() {
 		return git;
 	}
@@ -332,8 +332,8 @@ public class TestRepository<R extends Repository> {
 	public RevObject get(final RevTree tree, final String path)
 			throws Exception {
 		try (TreeWalk tw = new TreeWalk(pool.getObjectReader())) {
-			tw.setFilter(PathFilterGroup.createFromStrings(Collections
-					.singleton(path)));
+			tw.setFilter(PathFilterGroup
+					.createFromStrings(Collections.singleton(path)));
 			tw.reset(tree);
 			while (tw.next()) {
 				if (tw.isSubtree() && !path.equals(tw.getPathString())) {
@@ -493,10 +493,10 @@ public class TestRepository<R extends Repository> {
 	 *
 	 * @param ref
 	 *            the name of the reference to amend, which must already exist.
-	 *            If {@code ref} does not start with {@code refs/} and is not the
-	 *            magic names {@code HEAD} {@code FETCH_HEAD} or {@code
-	 *            MERGE_HEAD}, then {@code refs/heads/} will be prefixed in front
-	 *            of the given name, thereby assuming it is a branch.
+	 *            If {@code ref} does not start with {@code refs/} and is not
+	 *            the magic names {@code HEAD} {@code FETCH_HEAD} or {@code
+	 *            MERGE_HEAD}, then {@code refs/heads/} will be prefixed in
+	 *            front of the given name, thereby assuming it is a branch.
 	 * @return commit builder that amends the branch on commit.
 	 * @throws Exception
 	 */
@@ -520,12 +520,14 @@ public class TestRepository<R extends Repository> {
 		return amend(pool.parseCommit(id), commit());
 	}
 
-	private CommitBuilder amend(RevCommit old, CommitBuilder b) throws Exception {
+	private CommitBuilder amend(RevCommit old, CommitBuilder b)
+			throws Exception {
 		pool.parseBody(old);
 		b.author(old.getAuthorIdent());
 		b.committer(old.getCommitterIdent());
 		b.message(old.getFullMessage());
-		// Use the committer name from the old commit, but update it after ticking
+		// Use the committer name from the old commit, but update it after
+		// ticking
 		// the clock in CommitBuilder#create().
 		b.updateCommitterTime = true;
 
@@ -534,7 +536,8 @@ public class TestRepository<R extends Repository> {
 		for (int i = 0; i < old.getParentCount(); i++)
 			b.parent(old.getParent(i));
 
-		// Reset tree to original tree; resetting parents reset tree contents to the
+		// Reset tree to original tree; resetting parents reset tree contents to
+		// the
 		// first parent.
 		b.tree.clear();
 		try (TreeWalk tw = new TreeWalk(db)) {
@@ -570,7 +573,8 @@ public class TestRepository<R extends Repository> {
 	 * @return the target object.
 	 * @throws Exception
 	 */
-	public <T extends AnyObjectId> T update(String ref, T obj) throws Exception {
+	public <T extends AnyObjectId> T update(String ref, T obj)
+			throws Exception {
 		ref = normalizeRef(ref);
 		RefUpdate u = db.updateRef(ref);
 		u.setNewObjectId(obj);
@@ -604,6 +608,7 @@ public class TestRepository<R extends Repository> {
 	/**
 	 * Soft-reset HEAD to a detached state.
 	 * <p>
+	 *
 	 * @param id
 	 *            ID of detached head.
 	 * @throws Exception
@@ -614,26 +619,26 @@ public class TestRepository<R extends Repository> {
 		ru.setNewObjectId(id);
 		RefUpdate.Result result = ru.forceUpdate();
 		switch (result) {
-			case FAST_FORWARD:
-			case FORCED:
-			case NEW:
-			case NO_CHANGE:
-				break;
-			default:
-				throw new IOException(String.format(
-						"Checkout \"%s\" failed: %s", id.name(), result));
+		case FAST_FORWARD:
+		case FORCED:
+		case NEW:
+		case NO_CHANGE:
+			break;
+		default:
+			throw new IOException(String.format("Checkout \"%s\" failed: %s",
+					id.name(), result));
 		}
 	}
 
 	/**
 	 * Soft-reset HEAD to a different commit.
 	 * <p>
-	 * This is equivalent to {@code git reset --soft} in that it modifies HEAD but
-	 * not the index or the working tree of a non-bare repository.
+	 * This is equivalent to {@code git reset --soft} in that it modifies HEAD
+	 * but not the index or the working tree of a non-bare repository.
 	 *
 	 * @param name
-	 *            revision string; either an existing ref name, or something that
-	 *            can be parsed to an object ID.
+	 *            revision string; either an existing ref name, or something
+	 *            that can be parsed to an object ID.
 	 * @throws Exception
 	 */
 	public void reset(String name) throws Exception {
@@ -645,14 +650,14 @@ public class TestRepository<R extends Repository> {
 		ru.setNewObjectId(id);
 		result = ru.forceUpdate();
 		switch (result) {
-			case FAST_FORWARD:
-			case FORCED:
-			case NEW:
-			case NO_CHANGE:
-				break;
-			default:
-				throw new IOException(String.format(
-						"Checkout \"%s\" failed: %s", name, result));
+		case FAST_FORWARD:
+		case FORCED:
+		case NEW:
+		case NO_CHANGE:
+			break;
+		default:
+			throw new IOException(
+					String.format("Checkout \"%s\" failed: %s", name, result));
 		}
 	}
 
@@ -673,9 +678,9 @@ public class TestRepository<R extends Repository> {
 		RevCommit commit = pool.parseCommit(id);
 		pool.parseBody(commit);
 		if (commit.getParentCount() != 1)
-			throw new IOException(String.format(
-					"Expected 1 parent for %s, found: %s",
-					id.name(), Arrays.asList(commit.getParents())));
+			throw new IOException(
+					String.format("Expected 1 parent for %s, found: %s",
+							id.name(), Arrays.asList(commit.getParents())));
 		RevCommit parent = commit.getParent(0);
 		pool.parseHeaders(parent);
 
@@ -690,8 +695,7 @@ public class TestRepository<R extends Repository> {
 			if (AnyObjectId.equals(head.getTree(), merger.getResultTreeId()))
 				return null;
 			tick(1);
-			org.eclipse.jgit.lib.CommitBuilder b =
-					new org.eclipse.jgit.lib.CommitBuilder();
+			org.eclipse.jgit.lib.CommitBuilder b = new org.eclipse.jgit.lib.CommitBuilder();
 			b.setParentId(head);
 			b.setTreeId(merger.getResultTreeId());
 			b.setAuthor(commit.getAuthorIdent());
@@ -734,8 +738,10 @@ public class TestRepository<R extends Repository> {
 				w.append(p.getPackFile().getName());
 				w.append('\n');
 			}
-			writeFile(new File(new File(fr.getObjectDatabase().getDirectory(),
-					"info"), "packs"), Constants.encodeASCII(w.toString()));
+			writeFile(
+					new File(new File(fr.getObjectDatabase().getDirectory(),
+							"info"), "packs"),
+					Constants.encodeASCII(w.toString()));
 		}
 	}
 
@@ -871,15 +877,15 @@ public class TestRepository<R extends Repository> {
 				final ObjectId name = pw.computeName();
 
 				pack = nameFor(odb, name, ".pack");
-				try (OutputStream out =
-						new SafeBufferedOutputStream(new FileOutputStream(pack))) {
+				try (OutputStream out = new SafeBufferedOutputStream(
+						new FileOutputStream(pack))) {
 					pw.writePack(m, m, out);
 				}
 				pack.setReadOnly();
 
 				idx = nameFor(odb, name, ".idx");
-				try (OutputStream out =
-						new SafeBufferedOutputStream(new FileOutputStream(idx))) {
+				try (OutputStream out = new SafeBufferedOutputStream(
+						new FileOutputStream(idx))) {
 					pw.writeIndex(out);
 				}
 				idx.setReadOnly();
@@ -903,9 +909,9 @@ public class TestRepository<R extends Repository> {
 		return new File(packdir, "pack-" + name.name() + t);
 	}
 
-	private void writeFile(final File p, final byte[] bin) throws IOException,
-			ObjectWritingException {
-		final LockFile lck = new LockFile(p, db.getFS());
+	private void writeFile(final File p, final byte[] bin)
+			throws IOException, ObjectWritingException {
+		final LockFile lck = new LockFile(p);
 		if (!lck.lock())
 			throw new ObjectWritingException("Can't write " + p);
 		try {
@@ -979,6 +985,7 @@ public class TestRepository<R extends Repository> {
 		private RevCommit self;
 
 		private PersonIdent author;
+
 		private PersonIdent committer;
 
 		private String changeId;
@@ -1012,8 +1019,8 @@ public class TestRepository<R extends Repository> {
 			if (parents.isEmpty()) {
 				DirCacheBuilder b = tree.builder();
 				parseBody(p);
-				b.addTree(new byte[0], DirCacheEntry.STAGE_0, pool
-						.getObjectReader(), p.getTree());
+				b.addTree(new byte[0], DirCacheEntry.STAGE_0,
+						pool.getObjectReader(), p.getTree());
 				b.finish();
 			}
 			parents.add(p);
@@ -1174,9 +1181,11 @@ public class TestRepository<R extends Repository> {
 				cid = ObjectId.fromString(changeId);
 			message = ChangeIdUtil.insertId(message, cid);
 			if (cid != null)
-				message = message.replaceAll("\nChange-Id: I" //$NON-NLS-1$
-						+ ObjectId.zeroId().getName() + "\n", "\nChange-Id: I" //$NON-NLS-1$ //$NON-NLS-2$
-						+ cid.getName() + "\n"); //$NON-NLS-1$
+				message = message.replaceAll(
+						"\nChange-Id: I" //$NON-NLS-1$
+								+ ObjectId.zeroId().getName() + "\n", //$NON-NLS-1$
+						"\nChange-Id: I" //$NON-NLS-1$
+								+ cid.getName() + "\n"); //$NON-NLS-1$
 		}
 
 		public CommitBuilder child() throws Exception {

@@ -47,13 +47,11 @@ import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.jgit.lib.Constants;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 
 /** Keeps track of a {@link PackFile}'s associated <code>.keep</code> file. */
 public class PackLock {
 	private final File keepFile;
-	private final FS fs;
 
 	/**
 	 * Create a new lock for a pack file.
@@ -63,11 +61,10 @@ public class PackLock {
 	 * @param fs
 	 *            the filesystem abstraction used by the repository.
 	 */
-	public PackLock(final File packFile, final FS fs) {
+	public PackLock(final File packFile) {
 		final File p = packFile.getParentFile();
 		final String n = packFile.getName();
 		keepFile = new File(p, n.substring(0, n.length() - 5) + ".keep"); //$NON-NLS-1$
-		this.fs = fs;
 	}
 
 	/**
@@ -84,7 +81,7 @@ public class PackLock {
 			return false;
 		if (!msg.endsWith("\n")) //$NON-NLS-1$
 			msg += "\n"; //$NON-NLS-1$
-		final LockFile lf = new LockFile(keepFile, fs);
+		final LockFile lf = new LockFile(keepFile);
 		if (!lf.lock())
 			return false;
 		lf.write(Constants.encode(msg));

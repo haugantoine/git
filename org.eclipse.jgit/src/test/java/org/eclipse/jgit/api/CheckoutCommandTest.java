@@ -368,7 +368,7 @@ public class CheckoutCommandTest extends RepositoryTestCase {
 		long mTime = file.lastModified() - 5000L;
 		assertTrue(file.setLastModified(mTime));
 
-		DirCache cache = DirCache.lock(db.getIndexFile(), db.getFS());
+		DirCache cache = DirCache.lock(db.getIndexFile());
 		DirCacheEntry entry = cache.getEntry("Test.txt");
 		assertNotNull(entry);
 		entry.setLength(0);
@@ -376,7 +376,7 @@ public class CheckoutCommandTest extends RepositoryTestCase {
 		cache.write();
 		assertTrue(cache.commit());
 
-		cache = DirCache.read(db.getIndexFile(), db.getFS());
+		cache = DirCache.read(db.getIndexFile());
 		entry = cache.getEntry("Test.txt");
 		assertNotNull(entry);
 		assertEquals(0, entry.getLength());
@@ -387,7 +387,7 @@ public class CheckoutCommandTest extends RepositoryTestCase {
 
 		assertNotNull(git.checkout().setName("test").call());
 
-		cache = DirCache.read(db.getIndexFile(), db.getFS());
+		cache = DirCache.read(db.getIndexFile());
 		entry = cache.getEntry("Test.txt");
 		assertNotNull(entry);
 		assertEquals(size, entry.getLength());

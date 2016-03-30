@@ -58,7 +58,6 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
-import org.eclipse.jgit.util.FS;
 import org.junit.Test;
 
 public class DirCacheIteratorTest extends RepositoryTestCase {
@@ -421,7 +420,7 @@ public class DirCacheIteratorTest extends RepositoryTestCase {
 		final File path = JGitTestUtil
 				.getTestResourceFile("dircache.testRemovedSubtree");
 
-		final DirCache dc = DirCache.read(path, FS.DETECTED);
+		final DirCache dc = DirCache.read(path);
 		assertEquals(2, dc.getEntryCount());
 
 		final TreeWalk tw = new TreeWalk(db);

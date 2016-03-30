@@ -48,7 +48,6 @@ package org.eclipse.jgit.lib;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.List;
 
@@ -259,7 +258,7 @@ public class CommitBuilder {
 	 *             the encoding specified by {@link #getEncoding()} is not
 	 *             supported by this Java runtime.
 	 */
-	public byte[] build() throws UnsupportedEncodingException {
+	public byte[] build() {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		OutputStreamWriter w = new OutputStreamWriter(os, getEncoding());
 		try {
@@ -318,7 +317,7 @@ public class CommitBuilder {
 	 *             the encoding specified by {@link #getEncoding()} is not
 	 *             supported by this Java runtime.
 	 */
-	public byte[] toByteArray() throws UnsupportedEncodingException {
+	public byte[] toByteArray() {
 		return build();
 	}
 

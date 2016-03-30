@@ -205,13 +205,17 @@ public abstract class Repository implements AutoCloseable {
 	@NonNull
 	public abstract ObjectDatabase getObjectDatabase();
 
-	/** @return a new inserter to create objects in {@link #getObjectDatabase()} */
+	/**
+	 * @return a new inserter to create objects in {@link #getObjectDatabase()}
+	 */
 	@NonNull
 	public ObjectInserter newObjectInserter() {
 		return getObjectDatabase().newInserter();
 	}
 
-	/** @return a new reader to read objects from {@link #getObjectDatabase()} */
+	/**
+	 * @return a new reader to read objects from {@link #getObjectDatabase()}
+	 */
 	@NonNull
 	public ObjectReader newObjectReader() {
 		return getObjectDatabase().newReader();
@@ -236,7 +240,6 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	@NonNull
 	public abstract AttributesNodeProvider createAttributesNodeProvider();
-
 
 	/**
 	 * @return the used file system abstraction, or or {@code null} if
@@ -348,7 +351,8 @@ public abstract class Repository implements AutoCloseable {
 	 *             to the base ref, as the symbolic ref could not be read.
 	 */
 	@NonNull
-	public RefUpdate updateRef(final String ref, final boolean detach) throws IOException {
+	public RefUpdate updateRef(final String ref, final boolean detach)
+			throws IOException {
 		return getRefDatabase().newUpdate(ref, detach);
 	}
 
@@ -365,7 +369,8 @@ public abstract class Repository implements AutoCloseable {
 	 *
 	 */
 	@NonNull
-	public RefRename renameRef(final String fromRef, final String toRef) throws IOException {
+	public RefRename renameRef(final String fromRef, final String toRef)
+			throws IOException {
 		return getRefDatabase().newRename(fromRef, toRef);
 	}
 
@@ -386,7 +391,8 @@ public abstract class Repository implements AutoCloseable {
 	 * <li><i>id</i><b>^0</b>: ensure <i>id</i> is a commit</li>
 	 * <li><i>id</i><b>^n</b>: n-th parent of commit <i>id</i></li>
 	 * <li><i>id</i><b>~n</b>: n-th historical ancestor of <i>id</i>, by first
-	 * parent. {@code id~3} is equivalent to {@code id^1^1^1} or {@code id^^^}.</li>
+	 * parent. {@code id~3} is equivalent to {@code id^1^1^1} or {@code id^^^}.
+	 * </li>
 	 * <li><i>id</i><b>:path</b>: Lookup path under tree named by <i>id</i></li>
 	 * <li><i>id</i><b>^{commit}</b>: ensure <i>id</i> is a commit</li>
 	 * <li><i>id</i><b>^{tree}</b>: ensure <i>id</i> is a tree</li>
@@ -451,12 +457,12 @@ public abstract class Repository implements AutoCloseable {
 			throws AmbiguousObjectException, IOException {
 		try (RevWalk rw = new RevWalk(this)) {
 			Object resolved = resolve(rw, revstr);
-			if (resolved != null)
-				if (resolved instanceof String)
-					return (String) resolved;
-				else
-					return ((AnyObjectId) resolved).getName();
-			return null;
+			if (resolved == null) {
+				return null;
+			}
+			if (resolved instanceof String)
+				return (String) resolved;
+			return ((AnyObjectId) resolved).getName();
 		}
 	}
 
@@ -467,15 +473,15 @@ public abstract class Repository implements AutoCloseable {
 		RevObject rev = null;
 		String name = null;
 		int done = 0;
-		for (int i = 0; i < revChars.length; ++i) {
-			switch (revChars[i]) {
+		for (int resolveIndex = 0; resolveIndex < revChars.length; ++resolveIndex) {
+			switch (revChars[resolveIndex]) {
 			case '^':
 				if (rev == null) {
 					if (name == null)
 						if (done == 0)
-							name = new String(revChars, done, i);
+							name = new String(revChars, done, resolveIndex);
 						else {
-							done = i + 1;
+							done = resolveIndex + 1;
 							break;
 						}
 					rev = parseSimple(rw, name);
@@ -483,8 +489,8 @@ public abstract class Repository implements AutoCloseable {
 					if (rev == null)
 						return null;
 				}
-				if (i + 1 < revChars.length) {
-					switch (revChars[i + 1]) {
+				if (resolveIndex + 1 < revChars.length) {
+					switch (revChars[resolveIndex + 1]) {
 					case '0':
 					case '1':
 					case '2':
@@ -495,14 +501,16 @@ public abstract class Repository implements AutoCloseable {
 					case '7':
 					case '8':
 					case '9':
-						int j;
+						int parentCommitIndex;
 						rev = rw.parseCommit(rev);
-						for (j = i + 1; j < revChars.length; ++j) {
-							if (!Character.isDigit(revChars[j]))
+						for (parentCommitIndex = resolveIndex
+								+ 1; parentCommitIndex < revChars.length; ++parentCommitIndex) {
+							if (!Character.isDigit(revChars[parentCommitIndex]))
 								break;
 						}
-						String parentnum = new String(revChars, i + 1, j - i
-								- 1);
+						String parentnum = new String(revChars,
+								resolveIndex + 1,
+								parentCommitIndex - resolveIndex - 1);
 						int pnum;
 						try {
 							pnum = Integer.parseInt(parentnum);
@@ -518,70 +526,53 @@ public abstract class Repository implements AutoCloseable {
 							else
 								rev = commit.getParent(pnum - 1);
 						}
-						i = j - 1;
-						done = j;
+						resolveIndex = parentCommitIndex - 1;
+						done = parentCommitIndex;
 						break;
 					case '{':
-						int k;
+						int typeIndex;
 						String item = null;
-						for (k = i + 2; k < revChars.length; ++k) {
-							if (revChars[k] == '}') {
-								item = new String(revChars, i + 2, k - i - 2);
+						for (typeIndex = resolveIndex
+								+ 2; typeIndex < revChars.length; ++typeIndex) {
+							if (revChars[typeIndex] == '}') {
+								item = new String(revChars, resolveIndex + 2,
+										typeIndex - resolveIndex - 2);
 								break;
 							}
 						}
-						i = k;
-						if (item != null)
-							if (item.equals("tree")) { //$NON-NLS-1$
-								rev = rw.parseTree(rev);
-							} else if (item.equals("commit")) { //$NON-NLS-1$
-								rev = rw.parseCommit(rev);
-							} else if (item.equals("blob")) { //$NON-NLS-1$
-								rev = rw.peel(rev);
-								if (!(rev instanceof RevBlob))
-									throw new IncorrectObjectTypeException(rev,
-											Constants.TYPE_BLOB);
-							} else if (item.equals("")) { //$NON-NLS-1$
-								rev = rw.peel(rev);
-							} else
-								throw new RevisionSyntaxException(revstr);
-						else
+						resolveIndex = typeIndex;
+						if (item == null)
 							throw new RevisionSyntaxException(revstr);
-						done = k;
+						if (item.equals("tree")) { //$NON-NLS-1$
+							rev = rw.parseTree(rev);
+						} else if (item.equals("commit")) { //$NON-NLS-1$
+							rev = rw.parseCommit(rev);
+						} else if (item.equals("blob")) { //$NON-NLS-1$
+							rev = rw.peel(rev);
+							if (!(rev instanceof RevBlob))
+								throw new IncorrectObjectTypeException(rev,
+										Constants.TYPE_BLOB);
+						} else if (item.equals("")) { //$NON-NLS-1$
+							rev = rw.peel(rev);
+						} else
+							throw new RevisionSyntaxException(revstr);
+						done = typeIndex;
 						break;
 					default:
-						rev = rw.peel(rev);
-						if (rev instanceof RevCommit) {
-							RevCommit commit = ((RevCommit) rev);
-							if (commit.getParentCount() == 0)
-								rev = null;
-							else
-								rev = commit.getParent(0);
-						} else
-							throw new IncorrectObjectTypeException(rev,
-									Constants.TYPE_COMMIT);
+						rev = getRevisionWalkCurrentCommit(rw, rev);
 					}
 				} else {
-					rev = rw.peel(rev);
-					if (rev instanceof RevCommit) {
-						RevCommit commit = ((RevCommit) rev);
-						if (commit.getParentCount() == 0)
-							rev = null;
-						else
-							rev = commit.getParent(0);
-					} else
-						throw new IncorrectObjectTypeException(rev,
-								Constants.TYPE_COMMIT);
+					rev = getRevisionWalkCurrentCommit(rw, rev);
 				}
-				done = i + 1;
+				done = resolveIndex + 1;
 				break;
 			case '~':
 				if (rev == null) {
 					if (name == null)
 						if (done == 0)
-							name = new String(revChars, done, i);
+							name = new String(revChars, done, resolveIndex);
 						else {
-							done = i + 1;
+							done = resolveIndex + 1;
 							break;
 						}
 					rev = parseSimple(rw, name);
@@ -594,13 +585,14 @@ public abstract class Repository implements AutoCloseable {
 					throw new IncorrectObjectTypeException(rev,
 							Constants.TYPE_COMMIT);
 				int l;
-				for (l = i + 1; l < revChars.length; ++l) {
+				for (l = resolveIndex + 1; l < revChars.length; ++l) {
 					if (!Character.isDigit(revChars[l]))
 						break;
 				}
 				int dist;
-				if (l - i > 1) {
-					String distnum = new String(revChars, i + 1, l - i - 1);
+				if (l - resolveIndex > 1) {
+					String distnum = new String(revChars, resolveIndex + 1,
+							l - resolveIndex - 1);
 					try {
 						dist = Integer.parseInt(distnum);
 					} catch (NumberFormatException e) {
@@ -620,101 +612,98 @@ public abstract class Repository implements AutoCloseable {
 					rev = commit;
 					--dist;
 				}
-				i = l - 1;
+				resolveIndex = l - 1;
 				done = l;
 				break;
 			case '@':
 				if (rev != null)
 					throw new RevisionSyntaxException(revstr);
-				if (i + 1 < revChars.length && revChars[i + 1] != '{')
+				if (resolveIndex + 1 < revChars.length
+						&& revChars[resolveIndex + 1] != '{')
 					continue;
 				int m;
 				String time = null;
-				for (m = i + 2; m < revChars.length; ++m) {
+				for (m = resolveIndex + 2; m < revChars.length; ++m) {
 					if (revChars[m] == '}') {
-						time = new String(revChars, i + 2, m - i - 2);
+						time = new String(revChars, resolveIndex + 2,
+								m - resolveIndex - 2);
 						break;
 					}
 				}
-				if (time != null) {
-					if (time.equals("upstream")) { //$NON-NLS-1$
-						if (name == null)
-							name = new String(revChars, done, i);
-						if (name.equals("")) //$NON-NLS-1$
-							// Currently checked out branch, HEAD if
-							// detached
-							name = Constants.HEAD;
-						if (!Repository.isValidRefName("x/" + name)) //$NON-NLS-1$
-							throw new RevisionSyntaxException(revstr);
-						Ref ref = findRef(name);
-						name = null;
-						if (ref == null)
-							return null;
-						if (ref.isSymbolic())
-							ref = ref.getLeaf();
-						name = ref.getName();
-
-						RemoteConfig remoteConfig;
-						try {
-							remoteConfig = new RemoteConfig(getConfig(),
-									"origin"); //$NON-NLS-1$
-						} catch (URISyntaxException e) {
-							throw new RevisionSyntaxException(revstr);
-						}
-						String remoteBranchName = getConfig()
-								.getString(
-										ConfigConstants.CONFIG_BRANCH_SECTION,
-								Repository.shortenRefName(ref.getName()),
-										ConfigConstants.CONFIG_KEY_MERGE);
-						List<RefSpec> fetchRefSpecs = remoteConfig
-								.getFetchRefSpecs();
-						for (RefSpec refSpec : fetchRefSpecs) {
-							if (refSpec.matchSource(remoteBranchName)) {
-								RefSpec expandFromSource = refSpec
-										.expandFromSource(remoteBranchName);
-								name = expandFromSource.getDestination();
-								break;
-							}
-						}
-						if (name == null)
-							throw new RevisionSyntaxException(revstr);
-					} else if (time.matches("^-\\d+$")) { //$NON-NLS-1$
-						if (name != null)
-							throw new RevisionSyntaxException(revstr);
-						else {
-							String previousCheckout = resolveReflogCheckout(-Integer
-									.parseInt(time));
-							if (ObjectId.isId(previousCheckout))
-								rev = parseSimple(rw, previousCheckout);
-							else
-								name = previousCheckout;
-						}
-					} else {
-						if (name == null)
-							name = new String(revChars, done, i);
-						if (name.equals("")) //$NON-NLS-1$
-							name = Constants.HEAD;
-						if (!Repository.isValidRefName("x/" + name)) //$NON-NLS-1$
-							throw new RevisionSyntaxException(revstr);
-						Ref ref = findRef(name);
-						name = null;
-						if (ref == null)
-							return null;
-						// @{n} means current branch, not HEAD@{1} unless
-						// detached
-						if (ref.isSymbolic())
-							ref = ref.getLeaf();
-						rev = resolveReflog(rw, ref, time);
-					}
-					i = m;
-				} else
+				if (time == null)
 					throw new RevisionSyntaxException(revstr);
+				if (time.equals("upstream")) { //$NON-NLS-1$
+					if (name == null)
+						name = new String(revChars, done, resolveIndex);
+					if (name.equals("")) //$NON-NLS-1$
+						// Currently checked out branch, HEAD if
+						// detached
+						name = Constants.HEAD;
+					if (!Repository.isValidRefName("x/" + name)) //$NON-NLS-1$
+						throw new RevisionSyntaxException(revstr);
+					Ref ref = findRef(name);
+					name = null;
+					if (ref == null)
+						return null;
+					if (ref.isSymbolic())
+						ref = ref.getLeaf();
+					name = ref.getName();
+
+					RemoteConfig remoteConfig;
+					try {
+						remoteConfig = new RemoteConfig(getConfig(), "origin"); //$NON-NLS-1$
+					} catch (URISyntaxException e) {
+						throw new RevisionSyntaxException(revstr);
+					}
+					String remoteBranchName = getConfig().getString(
+							ConfigConstants.CONFIG_BRANCH_SECTION,
+							Repository.shortenRefName(ref.getName()),
+							ConfigConstants.CONFIG_KEY_MERGE);
+					List<RefSpec> fetchRefSpecs = remoteConfig
+							.getFetchRefSpecs();
+					for (RefSpec refSpec : fetchRefSpecs) {
+						if (refSpec.matchSource(remoteBranchName)) {
+							RefSpec expandFromSource = refSpec
+									.expandFromSource(remoteBranchName);
+							name = expandFromSource.getDestination();
+							break;
+						}
+					}
+					if (name == null)
+						throw new RevisionSyntaxException(revstr);
+				} else if (time.matches("^-\\d+$")) { //$NON-NLS-1$
+					if (name != null)
+						throw new RevisionSyntaxException(revstr);
+					String previousCheckout = resolveReflogCheckout(
+							-Integer.parseInt(time));
+					if (ObjectId.isId(previousCheckout))
+						rev = parseSimple(rw, previousCheckout);
+					else
+						name = previousCheckout;
+				} else {
+					if (name == null)
+						name = new String(revChars, done, resolveIndex);
+					if (name.equals("")) //$NON-NLS-1$
+						name = Constants.HEAD;
+					if (!Repository.isValidRefName("x/" + name)) //$NON-NLS-1$
+						throw new RevisionSyntaxException(revstr);
+					Ref ref = findRef(name);
+					name = null;
+					if (ref == null)
+						return null;
+					// @{n} means current branch, not HEAD@{1} unless
+					// detached
+					if (ref.isSymbolic())
+						ref = ref.getLeaf();
+					rev = resolveReflog(rw, ref, time);
+				}
+				resolveIndex = m;
 				break;
 			case ':': {
 				RevTree tree;
 				if (rev == null) {
 					if (name == null)
-						name = new String(revChars, done, i);
+						name = new String(revChars, done, resolveIndex);
 					if (name.equals("")) //$NON-NLS-1$
 						name = Constants.HEAD;
 					rev = parseSimple(rw, name);
@@ -723,12 +712,14 @@ public abstract class Repository implements AutoCloseable {
 				if (rev == null)
 					return null;
 				tree = rw.parseTree(rev);
-				if (i == revChars.length - 1)
+				if (resolveIndex == revChars.length - 1)
 					return tree.copy();
 
-				TreeWalk tw = TreeWalk.forPath(rw.getObjectReader(),
-						new String(revChars, i + 1, revChars.length - i - 1),
-						tree);
+				TreeWalk tw = TreeWalk
+						.forPath(rw.getObjectReader(),
+								new String(revChars, resolveIndex + 1,
+										revChars.length - resolveIndex - 1),
+								tree);
 				return tw != null ? tw.getObjectId(0) : null;
 			}
 			default:
@@ -750,6 +741,21 @@ public abstract class Repository implements AutoCloseable {
 		return resolveSimple(name);
 	}
 
+	private RevObject getRevisionWalkCurrentCommit(final RevWalk rw,
+			RevObject rev) throws MissingObjectException, IOException,
+			IncorrectObjectTypeException {
+		rev = rw.peel(rev);
+		if (rev instanceof RevCommit) {
+			RevCommit commit = ((RevCommit) rev);
+			if (commit.getParentCount() == 0)
+				rev = null;
+			else
+				rev = commit.getParent(0);
+		} else
+			throw new IncorrectObjectTypeException(rev, Constants.TYPE_COMMIT);
+		return rev;
+	}
+
 	private static boolean isHex(char c) {
 		return ('0' <= c && c <= '9') //
 				|| ('a' <= c && c <= 'f') //
@@ -765,7 +771,8 @@ public abstract class Repository implements AutoCloseable {
 	}
 
 	@Nullable
-	private RevObject parseSimple(RevWalk rw, String revstr) throws IOException {
+	private RevObject parseSimple(RevWalk rw, String revstr)
+			throws IOException {
 		ObjectId id = resolveSimple(revstr);
 		return id != null ? rw.parseAny(id) : null;
 	}
@@ -799,8 +806,7 @@ public abstract class Repository implements AutoCloseable {
 	}
 
 	@Nullable
-	private String resolveReflogCheckout(int checkoutNo)
-			throws IOException {
+	private String resolveReflogCheckout(int checkoutNo) throws IOException {
 		ReflogReader reader = getReflogReader(Constants.HEAD);
 		if (reader == null) {
 			return null;
@@ -821,8 +827,8 @@ public abstract class Repository implements AutoCloseable {
 		try {
 			number = Integer.parseInt(time);
 		} catch (NumberFormatException nfe) {
-			throw new RevisionSyntaxException(MessageFormat.format(
-					JGitText.get().invalidReflogRevision, time));
+			throw new RevisionSyntaxException(MessageFormat
+					.format(JGitText.get().invalidReflogRevision, time));
 		}
 		assert number >= 0;
 		ReflogReader reader = getReflogReader(ref.getName());
@@ -833,16 +839,16 @@ public abstract class Repository implements AutoCloseable {
 		}
 		ReflogEntry entry = reader.getReverseEntry(number);
 		if (entry == null)
-			throw new RevisionSyntaxException(MessageFormat.format(
-					JGitText.get().reflogEntryNotFound,
-					Integer.valueOf(number), ref.getName()));
+			throw new RevisionSyntaxException(
+					MessageFormat.format(JGitText.get().reflogEntryNotFound,
+							Integer.valueOf(number), ref.getName()));
 
 		return rw.parseCommit(entry.getNewId());
 	}
 
 	@Nullable
-	private ObjectId resolveAbbreviation(final String revstr) throws IOException,
-			AmbiguousObjectException {
+	private ObjectId resolveAbbreviation(final String revstr)
+			throws IOException, AmbiguousObjectException {
 		AbbreviatedObjectId id = AbbreviatedObjectId.fromString(revstr);
 		try (ObjectReader reader = newObjectReader()) {
 			Collection<ObjectId> matches = reader.resolve(id);
@@ -855,7 +861,9 @@ public abstract class Repository implements AutoCloseable {
 		}
 	}
 
-	/** Increment the use counter by one, requiring a matched {@link #close()}. */
+	/**
+	 * Increment the use counter by one, requiring a matched {@link #close()}.
+	 */
 	public void incrementOpen() {
 		useCnt.incrementAndGet();
 	}
@@ -949,8 +957,8 @@ public abstract class Repository implements AutoCloseable {
 	 * <p>
 	 * When a repository borrows objects from another repository, it can
 	 * advertise that it safely has that other repository's references, without
-	 * exposing any other details about the other repository.  This may help
-	 * a client trying to push changes avoid pushing more than it needs to.
+	 * exposing any other details about the other repository. This may help a
+	 * client trying to push changes avoid pushing more than it needs to.
 	 *
 	 * @return unmodifiable collection of other known objects.
 	 */
@@ -969,7 +977,7 @@ public abstract class Repository implements AutoCloseable {
 	 * @return the Ref with the given name, or {@code null} if it does not exist
 	 * @throws IOException
 	 * @deprecated Use {@link #exactRef(String)} or {@link #findRef(String)}
-	 * instead.
+	 *             instead.
 	 */
 	@Deprecated
 	@Nullable
@@ -981,8 +989,8 @@ public abstract class Repository implements AutoCloseable {
 	 * Get a ref by name.
 	 *
 	 * @param name
-	 *            the name of the ref to lookup. Must not be a short-hand
-	 *            form; e.g., "master" is not automatically expanded to
+	 *            the name of the ref to lookup. Must not be a short-hand form;
+	 *            e.g., "master" is not automatically expanded to
 	 *            "refs/heads/master".
 	 * @return the Ref with the given name, or {@code null} if it does not exist
 	 * @throws IOException
@@ -1066,7 +1074,8 @@ public abstract class Repository implements AutoCloseable {
 	@NonNull
 	public Map<AnyObjectId, Set<Ref>> getAllRefsByPeeledObjectId() {
 		Map<String, Ref> allRefs = getAllRefs();
-		Map<AnyObjectId, Set<Ref>> ret = new HashMap<AnyObjectId, Set<Ref>>(allRefs.size());
+		Map<AnyObjectId, Set<Ref>> ret = new HashMap<AnyObjectId, Set<Ref>>(
+				allRefs.size());
 		for (Ref ref : allRefs.values()) {
 			ref = peel(ref);
 			AnyObjectId target = ref.getPeeledObjectId();
@@ -1120,8 +1129,8 @@ public abstract class Repository implements AutoCloseable {
 	 *             library does not support.
 	 */
 	@NonNull
-	public DirCache readDirCache() throws NoWorkTreeException,
-			CorruptObjectException, IOException {
+	public DirCache readDirCache()
+			throws NoWorkTreeException, CorruptObjectException, IOException {
 		return DirCache.read(this);
 	}
 
@@ -1145,8 +1154,8 @@ public abstract class Repository implements AutoCloseable {
 	 *             library does not support.
 	 */
 	@NonNull
-	public DirCache lockDirCache() throws NoWorkTreeException,
-			CorruptObjectException, IOException {
+	public DirCache lockDirCache()
+			throws NoWorkTreeException, CorruptObjectException, IOException {
 		// we want DirCache to inform us so that we can inform registered
 		// listeners about index changes
 		IndexChangedListener l = new IndexChangedListener() {
@@ -1161,7 +1170,7 @@ public abstract class Repository implements AutoCloseable {
 	static byte[] gitInternalSlash(byte[] bytes) {
 		if (File.separatorChar == '/')
 			return bytes;
-		for (int i=0; i<bytes.length; ++i)
+		for (int i = 0; i < bytes.length; ++i)
 			if (bytes[i] == File.separatorChar)
 				bytes[i] = '/';
 		return bytes;
@@ -1182,16 +1191,16 @@ public abstract class Repository implements AutoCloseable {
 			return RepositoryState.REBASING_INTERACTIVE;
 
 		// From 1.6 onwards
-		if (new File(getDirectory(),"rebase-apply/rebasing").exists()) //$NON-NLS-1$
+		if (new File(getDirectory(), "rebase-apply/rebasing").exists()) //$NON-NLS-1$
 			return RepositoryState.REBASING_REBASING;
-		if (new File(getDirectory(),"rebase-apply/applying").exists()) //$NON-NLS-1$
+		if (new File(getDirectory(), "rebase-apply/applying").exists()) //$NON-NLS-1$
 			return RepositoryState.APPLY;
-		if (new File(getDirectory(),"rebase-apply").exists()) //$NON-NLS-1$
+		if (new File(getDirectory(), "rebase-apply").exists()) //$NON-NLS-1$
 			return RepositoryState.REBASING;
 
-		if (new File(getDirectory(),"rebase-merge/interactive").exists()) //$NON-NLS-1$
+		if (new File(getDirectory(), "rebase-merge/interactive").exists()) //$NON-NLS-1$
 			return RepositoryState.REBASING_INTERACTIVE;
-		if (new File(getDirectory(),"rebase-merge").exists()) //$NON-NLS-1$
+		if (new File(getDirectory(), "rebase-merge").exists()) //$NON-NLS-1$
 			return RepositoryState.REBASING_MERGE;
 
 		// Both versions
@@ -1243,8 +1252,8 @@ public abstract class Repository implements AutoCloseable {
 	}
 
 	/**
-	 * Check validity of a ref name. It must not contain character that has
-	 * a special meaning in a Git object reference expression. Some other
+	 * Check validity of a ref name. It must not contain character that has a
+	 * special meaning in a Git object reference expression. Some other
 	 * dangerous characters are also excluded.
 	 *
 	 * For portability reasons '\' is excluded
@@ -1277,10 +1286,12 @@ public abstract class Repository implements AutoCloseable {
 			switch (c) {
 			case '.':
 				switch (p) {
-				case '\0': case '/': case '.':
+				case '\0':
+				case '/':
+				case '.':
 					return false;
 				}
-				if (i == len -1)
+				if (i == len - 1)
 					return false;
 				break;
 			case '/':
@@ -1294,8 +1305,12 @@ public abstract class Repository implements AutoCloseable {
 				if (p == '@')
 					return false;
 				break;
-			case '~': case '^': case ':':
-			case '?': case '[': case '*':
+			case '~':
+			case '^':
+			case ':':
+			case '?':
+			case '[':
+			case '*':
 			case '\\':
 			case '\u007F':
 				return false;
@@ -1308,20 +1323,23 @@ public abstract class Repository implements AutoCloseable {
 	/**
 	 * Strip work dir and return normalized repository path.
 	 *
-	 * @param workDir Work dir
-	 * @param file File whose path shall be stripped of its workdir
-	 * @return normalized repository relative path or the empty
-	 *         string if the file is not relative to the work directory.
+	 * @param workDir
+	 *            Work dir
+	 * @param file
+	 *            File whose path shall be stripped of its workdir
+	 * @return normalized repository relative path or the empty string if the
+	 *         file is not relative to the work directory.
 	 */
 	@NonNull
 	public static String stripWorkDir(File workDir, File file) {
 		final String filePath = file.getPath();
 		final String workDirPath = workDir.getPath();
 
-		if (filePath.length() <= workDirPath.length() ||
-		    filePath.charAt(workDirPath.length()) != File.separatorChar ||
-		    !filePath.startsWith(workDirPath)) {
-			File absWd = workDir.isAbsolute() ? workDir : workDir.getAbsoluteFile();
+		if (filePath.length() <= workDirPath.length()
+				|| filePath.charAt(workDirPath.length()) != File.separatorChar
+				|| !filePath.startsWith(workDirPath)) {
+			File absWd = workDir.isAbsolute() ? workDir
+					: workDir.getAbsoluteFile();
 			File absFile = file.isAbsolute() ? file : file.getAbsoluteFile();
 			if (absWd == workDir && absFile == file)
 				return ""; //$NON-NLS-1$
@@ -1514,7 +1532,8 @@ public abstract class Repository implements AutoCloseable {
 	 *             See {@link #isBare()}.
 	 */
 	@Nullable
-	public List<ObjectId> readMergeHeads() throws IOException, NoWorkTreeException {
+	public List<ObjectId> readMergeHeads()
+			throws IOException, NoWorkTreeException {
 		if (isBare() || getDirectory() == null)
 			throw new NoWorkTreeException();
 
@@ -1525,8 +1544,8 @@ public abstract class Repository implements AutoCloseable {
 		LinkedList<ObjectId> heads = new LinkedList<ObjectId>();
 		for (int p = 0; p < raw.length;) {
 			heads.add(ObjectId.fromString(raw, p));
-			p = RawParseUtils
-					.nextLF(raw, p + Constants.OBJECT_ID_STRING_LENGTH);
+			p = RawParseUtils.nextLF(raw,
+					p + Constants.OBJECT_ID_STRING_LENGTH);
 		}
 		return heads;
 	}
@@ -1542,7 +1561,8 @@ public abstract class Repository implements AutoCloseable {
 	 *            $GIT_DIR/MERGE_HEAD or <code>null</code> to delete the file
 	 * @throws IOException
 	 */
-	public void writeMergeHeads(List<? extends ObjectId> heads) throws IOException {
+	public void writeMergeHeads(List<? extends ObjectId> heads)
+			throws IOException {
 		writeHeadsFile(heads, Constants.MERGE_HEAD);
 	}
 
@@ -1558,8 +1578,8 @@ public abstract class Repository implements AutoCloseable {
 	 *             See {@link #isBare()}.
 	 */
 	@Nullable
-	public ObjectId readCherryPickHead() throws IOException,
-			NoWorkTreeException {
+	public ObjectId readCherryPickHead()
+			throws IOException, NoWorkTreeException {
 		if (isBare() || getDirectory() == null)
 			throw new NoWorkTreeException();
 
@@ -1787,8 +1807,7 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	@NonNull
 	public List<RebaseTodoLine> readRebaseTodo(String path,
-			boolean includeComments)
-			throws IOException {
+			boolean includeComments) throws IOException {
 		return new RebaseTodoFile(this).readRebaseTodo(path, includeComments);
 	}
 
@@ -1806,8 +1825,7 @@ public abstract class Repository implements AutoCloseable {
 	 * @since 3.2
 	 */
 	public void writeRebaseTodoFile(String path, List<RebaseTodoLine> steps,
-			boolean append)
-			throws IOException {
+			boolean append) throws IOException {
 		new RebaseTodoFile(this).writeRebaseTodoFile(path, steps, append);
 	}
 

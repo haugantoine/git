@@ -60,7 +60,6 @@ import java.text.MessageFormat;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 
 /**
@@ -127,22 +126,6 @@ public class LockFile {
 	boolean fsync;
 
 	private FileSnapshot commitSnapshot;
-
-	/**
-	 * Create a new lock for any file.
-	 *
-	 * @param f
-	 *            the file that will be locked.
-	 * @param fs
-	 *            the file system abstraction which will be necessary to perform
-	 *            certain file system operations.
-	 * @deprecated use {@link LockFile#LockFile(File)} instead
-	 */
-	@Deprecated
-	public LockFile(final File f, final FS fs) {
-		ref = f;
-		lck = getLockFile(ref);
-	}
 
 	/**
 	 * Create a new lock for any file.

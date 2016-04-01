@@ -223,12 +223,10 @@ public class FileRepository extends Repository {
 				getFS(), //
 				new File(getDirectory(), Constants.SHALLOW));
 
-		if (objectDatabase.exists()) {
-			if (repositoryFormatVersion > 1)
-				throw new IOException(MessageFormat.format(
-						JGitText.get().unknownRepositoryFormat2,
-						Long.valueOf(repositoryFormatVersion)));
-		}
+		if (objectDatabase.exists() && repositoryFormatVersion > 1)
+			throw new IOException(MessageFormat.format(
+					JGitText.get().unknownRepositoryFormat2,
+					Long.valueOf(repositoryFormatVersion)));
 
 		if (!isBare())
 			snapshot = FileSnapshot.save(getIndexFile());

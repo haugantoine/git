@@ -55,11 +55,11 @@ import java.io.IOException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
+import org.eclipse.jgit.lib.BaseRepositoryBuilder;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Test;
@@ -97,7 +97,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 	@Test
 	public void testNotBare_CreateRepositoryFromWorkDirOnly() throws Exception {
 		File workdir = getFile("workdir", "repo");
-		Repository repo = new FileRepositoryBuilder().setWorkTree(workdir)
+		Repository repo = new BaseRepositoryBuilder().setWorkTree(workdir)
 				.build();
 		assertFalse(repo.isBare());
 		assertWorkdirPath(repo, "workdir", "repo");
@@ -108,7 +108,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 	public void testWorkdirIsDotGit_CreateRepositoryFromWorkDirOnly()
 			throws Exception {
 		File workdir = getFile("workdir", "repo");
-		Repository repo = new FileRepositoryBuilder().setWorkTree(workdir)
+		Repository repo = new BaseRepositoryBuilder().setWorkTree(workdir)
 				.build();
 		assertGitdirPath(repo, "workdir", "repo", Constants.DOT_GIT);
 	}
@@ -119,7 +119,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 		File gitDir = getFile("workdir", "repoWithConfig");
 		File workTree = getFile("workdir", "treeRoot");
 		setWorkTree(gitDir, workTree);
-		Repository repo = new FileRepositoryBuilder().setGitDir(gitDir).build();
+		Repository repo = new BaseRepositoryBuilder().setGitDir(gitDir).build();
 		assertFalse(repo.isBare());
 		assertWorkdirPath(repo, "workdir", "treeRoot");
 		assertGitdirPath(repo, "workdir", "repoWithConfig");
@@ -130,7 +130,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 			throws Exception {
 		File gitDir = getFile("workdir", "repoWithConfig");
 		setBare(gitDir, true);
-		Repository repo = new FileRepositoryBuilder().setGitDir(gitDir).build();
+		Repository repo = new BaseRepositoryBuilder().setGitDir(gitDir).build();
 		assertTrue(repo.isBare());
 	}
 
@@ -139,7 +139,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 			throws Exception {
 		File gitDir = getFile("workdir", "repoWithBareConfigTrue", "child");
 		setBare(gitDir, false);
-		Repository repo = new FileRepositoryBuilder().setGitDir(gitDir).build();
+		Repository repo = new BaseRepositoryBuilder().setGitDir(gitDir).build();
 		assertWorkdirPath(repo, "workdir", "repoWithBareConfigTrue");
 	}
 
@@ -148,7 +148,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 			throws Exception {
 		File gitDir = getFile("workdir", "repoWithBareConfigFalse", "child");
 		setBare(gitDir, false);
-		Repository repo = new FileRepositoryBuilder().setGitDir(gitDir).build();
+		Repository repo = new BaseRepositoryBuilder().setGitDir(gitDir).build();
 		assertFalse(repo.isBare());
 		assertWorkdirPath(repo, "workdir", "repoWithBareConfigFalse");
 		assertGitdirPath(repo, "workdir", "repoWithBareConfigFalse", "child");

@@ -50,9 +50,9 @@ import java.util.concurrent.Callable;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.lib.BaseRepositoryBuilder;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.util.SystemReader;
 
 /**
@@ -75,7 +75,7 @@ public class InitCommand implements Callable<Git> {
 	 */
 	public Git call() throws GitAPIException {
 		try {
-			RepositoryBuilder builder = new RepositoryBuilder();
+			BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
 			if (bare)
 				builder.setBare();
 			builder.readEnvironment();

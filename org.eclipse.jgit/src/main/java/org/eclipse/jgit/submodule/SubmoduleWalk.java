@@ -53,6 +53,7 @@ import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.BaseRepositoryBuilder;
 import org.eclipse.jgit.lib.BlobBasedConfig;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -61,7 +62,6 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
@@ -228,7 +228,7 @@ public class SubmoduleWalk implements AutoCloseable {
 			return null;
 		File workTree = new File(parent, path);
 		try {
-			return new RepositoryBuilder() //
+			return new BaseRepositoryBuilder() //
 					.setMustExist(true) //
 					.setFS(FS.DETECTED) //
 					.setWorkTree(workTree) //

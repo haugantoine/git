@@ -68,6 +68,7 @@ import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.junit.RepositoryTestCase;
 import org.eclipse.jgit.junit.TestRepository;
+import org.eclipse.jgit.lib.BaseRepositoryBuilder;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
@@ -75,7 +76,6 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.junit.Before;
@@ -157,7 +157,7 @@ public class SubmoduleWalkTest extends RepositoryTestCase {
 				+ File.separatorChar + path);
 		new FileWriter(dotGit).append(
 				"gitdir: " + modulesGitDir.getAbsolutePath()).close();
-		FileRepositoryBuilder builder = new FileRepositoryBuilder();
+		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
 		builder.setWorkTree(new File(db.getWorkTree(), path));
 		builder.build().create();
 
@@ -209,7 +209,7 @@ public class SubmoduleWalkTest extends RepositoryTestCase {
 		new FileWriter(dotGit).append(
 				"gitdir: " + "../" + Constants.DOT_GIT + "/modules/" + path)
 				.close();
-		FileRepositoryBuilder builder = new FileRepositoryBuilder();
+		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
 		builder.setWorkTree(new File(db.getWorkTree(), path));
 		builder.build().create();
 

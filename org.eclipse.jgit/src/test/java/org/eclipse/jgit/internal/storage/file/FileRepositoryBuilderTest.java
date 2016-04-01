@@ -53,11 +53,11 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
+import org.eclipse.jgit.lib.BaseRepositoryBuilder;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Test;
 
@@ -68,7 +68,8 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File d = new File(r.getDirectory(), "sub-dir");
 		FileUtils.mkdir(d);
 
-		assertEquals(r.getDirectory(), new FileRepositoryBuilder()
+		assertEquals(r.getDirectory(),
+				new BaseRepositoryBuilder()
 				.findGitDir(d).getGitDir());
 	}
 
@@ -126,7 +127,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File dotGit = new File(dir, Constants.DOT_GIT);
 		new FileWriter(dotGit).append(
 				"gitdir: " + repo1.getDirectory().getAbsolutePath()).close();
-		FileRepositoryBuilder builder = new FileRepositoryBuilder();
+		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
 
 		builder.setWorkTree(dir);
 		builder.setMustExist(true);
@@ -147,7 +148,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		new FileWriter(dotGit).append("gitdir: ../" + Constants.DOT_GIT)
 				.close();
 
-		FileRepositoryBuilder builder = new FileRepositoryBuilder();
+		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
 		builder.setWorkTree(dir);
 		builder.setMustExist(true);
 		Repository repo2 = builder.build();
@@ -167,7 +168,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File dotGit = new File(dir, Constants.DOT_GIT);
 		new FileWriter(dotGit).append(
 				"gitdir: " + repo1.getDirectory().getAbsolutePath()).close();
-		FileRepositoryBuilder builder = new FileRepositoryBuilder();
+		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
 
 		builder.setWorkTree(dir);
 		builder.findGitDir(dir);

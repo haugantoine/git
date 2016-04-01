@@ -108,8 +108,8 @@ public class BaseRepositoryBuilder<B extends BaseRepositoryBuilder, R extends Re
 
 		int pathStart = 8;
 		int lineEnd = RawParseUtils.nextLF(content, pathStart);
-		while (content[lineEnd - 1] == '\n' ||
-		       (content[lineEnd - 1] == '\r' && SystemReader.getInstance().isWindows()))
+		while (content[lineEnd - 1] == '\n' || (content[lineEnd - 1] == '\r'
+				&& SystemReader.getInstance().isWindows()))
 			lineEnd--;
 		if (lineEnd == pathStart)
 			throw new IOException(MessageFormat.format(
@@ -242,31 +242,12 @@ public class BaseRepositoryBuilder<B extends BaseRepositoryBuilder, R extends Re
 		return self();
 	}
 
-	/**
-	 * Add alternate object directories to the search list.
-	 * <p>
-	 * This setting handles several alternate directories at once, and is
-	 * provided to support {@code GIT_ALTERNATE_OBJECT_DIRECTORIES}.
-	 *
-	 * @param inList
-	 *            other object directories to search after the standard one. The
-	 *            array's contents is copied to an internal list.
-	 * @return {@code this} (for chaining calls).
-	 */
-	public B addAlternateObjectDirectories(File[] inList) {
-		if (inList != null) {
-			for (File path : inList)
-				addAlternateObjectDirectory(path);
-		}
-		return self();
-	}
-
 	/** @return ordered array of alternate directories; null if non were set. */
 	public File[] getAlternateObjectDirectories() {
-		final List<File> alts = alternateObjectDirectories;
-		if (alts == null)
+		if (alternateObjectDirectories == null)
 			return null;
-		return alts.toArray(new File[alts.size()]);
+		return alternateObjectDirectories
+				.toArray(new File[alternateObjectDirectories.size()]);
 	}
 
 	/**
@@ -284,7 +265,9 @@ public class BaseRepositoryBuilder<B extends BaseRepositoryBuilder, R extends Re
 		return self();
 	}
 
-	/** @return true if this repository was forced bare by {@link #setBare()}. */
+	/**
+	 * @return true if this repository was forced bare by {@link #setBare()}.
+	 */
 	public boolean isBare() {
 		return bare;
 	}
@@ -600,10 +583,10 @@ public class BaseRepositoryBuilder<B extends BaseRepositoryBuilder, R extends Re
 		// location
 		if (getGitDir() == null && getWorkTree() != null) {
 			File dotGit = new File(getWorkTree(), DOT_GIT);
-			if (!dotGit.isFile())
-				setGitDir(dotGit);
-			else
+			if (dotGit.isFile())
 				setGitDir(getSymRef(getWorkTree(), dotGit, safeFS()));
+			else
+				setGitDir(dotGit);
 		}
 	}
 
@@ -673,24 +656,23 @@ public class BaseRepositoryBuilder<B extends BaseRepositoryBuilder, R extends Re
 	 *             the configuration is not available.
 	 */
 	protected Config loadConfig() throws IOException {
-		if (getGitDir() != null) {
-			// We only want the repository's configuration file, and not
-			// the user file, as these parameters must be unique to this
-			// repository and not inherited from other files.
-			//
-			File path = safeFS().resolve(getGitDir(), Constants.CONFIG);
-			FileBasedConfig cfg = new FileBasedConfig(path, safeFS());
-			try {
-				cfg.load();
-			} catch (ConfigInvalidException err) {
-				throw new IllegalArgumentException(MessageFormat.format(
-						JGitText.get().repositoryConfigFileInvalid, path
-								.getAbsolutePath(), err.getMessage()));
-			}
-			return cfg;
-		} else {
+		if (getGitDir() == null) {
 			return new Config();
 		}
+		// We only want the repository's configuration file, and not
+		// the user file, as these parameters must be unique to this
+		// repository and not inherited from other files.
+		//
+		File path = safeFS().resolve(getGitDir(), Constants.CONFIG);
+		FileBasedConfig cfg = new FileBasedConfig(path, safeFS());
+		try {
+			cfg.load();
+		} catch (ConfigInvalidException err) {
+			throw new IllegalArgumentException(MessageFormat.format(
+					JGitText.get().repositoryConfigFileInvalid,
+					path.getAbsolutePath(), err.getMessage()));
+		}
+		return cfg;
 	}
 
 	private File guessWorkTreeOrFail() throws IOException {

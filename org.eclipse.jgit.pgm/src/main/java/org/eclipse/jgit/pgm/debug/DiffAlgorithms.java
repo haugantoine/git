@@ -62,13 +62,13 @@ import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.errors.LargeObjectException;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.eclipse.jgit.lib.BaseRepositoryBuilder;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.MutableObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.pgm.Command;
 import org.eclipse.jgit.pgm.TextBuiltin;
@@ -139,7 +139,7 @@ class DiffAlgorithms extends TextBuiltin {
 			throw die("Current thread CPU time not supported on this JRE"); //$NON-NLS-1$
 
 		if (gitDirs.isEmpty()) {
-			RepositoryBuilder rb = new RepositoryBuilder() //
+			BaseRepositoryBuilder rb = new BaseRepositoryBuilder() //
 					.setGitDir(new File(gitdir)) //
 					.readEnvironment() //
 					.findGitDir();
@@ -149,7 +149,7 @@ class DiffAlgorithms extends TextBuiltin {
 		}
 
 		for (File dir : gitDirs) {
-			RepositoryBuilder rb = new RepositoryBuilder();
+			BaseRepositoryBuilder rb = new BaseRepositoryBuilder();
 			if (RepositoryCache.FileKey.isGitRepository(dir, FS.DETECTED))
 				rb.setGitDir(dir);
 			else

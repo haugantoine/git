@@ -745,14 +745,13 @@ public abstract class Repository implements AutoCloseable {
 			RevObject rev) throws MissingObjectException, IOException,
 			IncorrectObjectTypeException {
 		rev = rw.peel(rev);
-		if (rev instanceof RevCommit) {
-			RevCommit commit = ((RevCommit) rev);
-			if (commit.getParentCount() == 0)
-				rev = null;
-			else
-				rev = commit.getParent(0);
-		} else
+		if (!(rev instanceof RevCommit))
 			throw new IncorrectObjectTypeException(rev, Constants.TYPE_COMMIT);
+		RevCommit commit = ((RevCommit) rev);
+		if (commit.getParentCount() == 0)
+			rev = null;
+		else
+			rev = commit.getParent(0);
 		return rev;
 	}
 
@@ -814,9 +813,8 @@ public abstract class Repository implements AutoCloseable {
 		List<ReflogEntry> reflogEntries = reader.getReverseEntries();
 		for (ReflogEntry entry : reflogEntries) {
 			CheckoutEntry checkout = entry.parseCheckout();
-			if (checkout != null)
-				if (checkoutNo-- == 1)
-					return checkout.getFromBranch();
+			if (checkout != null && checkoutNo-- == 1)
+				return checkout.getFromBranch();
 		}
 		return null;
 	}
@@ -854,10 +852,9 @@ public abstract class Repository implements AutoCloseable {
 			Collection<ObjectId> matches = reader.resolve(id);
 			if (matches.size() == 0)
 				return null;
-			else if (matches.size() == 1)
+			if (matches.size() == 1)
 				return matches.iterator().next();
-			else
-				throw new AmbiguousObjectException(id, matches);
+			throw new AmbiguousObjectException(id, matches);
 		}
 	}
 
@@ -890,11 +887,11 @@ public abstract class Repository implements AutoCloseable {
 	public String toString() {
 		String desc;
 		File directory = getDirectory();
-		if (directory != null)
-			desc = directory.getPath();
-		else
+		if (directory == null)
 			desc = getClass().getSimpleName() + "-" //$NON-NLS-1$
 					+ System.identityHashCode(this);
+		else
+			desc = directory.getPath();
 		return "Repository[" + desc + "]"; //$NON-NLS-1$
 	}
 
@@ -965,24 +962,6 @@ public abstract class Repository implements AutoCloseable {
 	@NonNull
 	public Set<ObjectId> getAdditionalHaves() {
 		return Collections.emptySet();
-	}
-
-	/**
-	 * Get a ref by name.
-	 *
-	 * @param name
-	 *            the name of the ref to lookup. May be a short-hand form, e.g.
-	 *            "master" which is is automatically expanded to
-	 *            "refs/heads/master" if "refs/heads/master" already exists.
-	 * @return the Ref with the given name, or {@code null} if it does not exist
-	 * @throws IOException
-	 * @deprecated Use {@link #exactRef(String)} or {@link #findRef(String)}
-	 *             instead.
-	 */
-	@Deprecated
-	@Nullable
-	public Ref getRef(final String name) throws IOException {
-		return findRef(name);
 	}
 
 	/**

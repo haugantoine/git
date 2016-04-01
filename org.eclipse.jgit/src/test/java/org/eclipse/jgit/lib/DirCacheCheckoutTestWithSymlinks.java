@@ -87,8 +87,10 @@ public class DirCacheCheckoutTestWithSymlinks extends RepositoryTestCase {
 		File reposSymlink = createTempFile();
 		FileUtils.createSymLink(reposSymlink, repos.getPath());
 
-		Repository symlinkDB = FileRepositoryBuilder.create(new File(
-				reposSymlink, "repo/.git"));
+		Repository symlinkDB = new BaseRepositoryBuilder()
+				.setGitDir(new File(
+				reposSymlink, "repo/.git")).readEnvironment()
+		.build();
 		Git symlinkRepo = Git.wrap(symlinkDB);
 		symlinkRepo.checkout().setName("master").call();
 

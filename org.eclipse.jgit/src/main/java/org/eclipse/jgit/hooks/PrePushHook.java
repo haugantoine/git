@@ -140,10 +140,10 @@ public class PrePushHook extends GitHook<String> {
 		StringBuilder b = new StringBuilder();
 		boolean first = true;
 		for (RemoteRefUpdate u : toRefs) {
-			if (!first)
-				b.append("\n"); //$NON-NLS-1$
-			else
+			if (first)
 				first = false;
+			else
+				b.append("\n"); //$NON-NLS-1$
 			b.append(u.getSrcRef());
 			b.append(" "); //$NON-NLS-1$
 			b.append(u.getNewObjectId().getName());

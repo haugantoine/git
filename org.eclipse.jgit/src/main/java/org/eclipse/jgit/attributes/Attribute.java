@@ -139,11 +139,9 @@ public final class Attribute {
 		if (state != other.state)
 			return false;
 		if (value == null) {
-			if (other.value != null)
-				return false;
-		} else if (!value.equals(other.value))
-			return false;
-		return true;
+			return other.value == null;
+		}
+		return value.equals(other.value);
 	}
 
 	/**

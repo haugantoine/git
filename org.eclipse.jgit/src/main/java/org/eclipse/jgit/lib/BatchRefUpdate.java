@@ -171,15 +171,12 @@ public class BatchRefUpdate {
 	 * @return {@code this}.
 	 */
 	public BatchRefUpdate setRefLogMessage(String msg, boolean appendStatus) {
-		if (msg == null && !appendStatus)
-			disableRefLog();
-		else if (msg == null && appendStatus) {
-			refLogMessage = ""; //$NON-NLS-1$
-			refLogIncludeResult = true;
-		} else {
+		if (msg != null || !appendStatus) {
 			refLogMessage = msg;
-			refLogIncludeResult = appendStatus;
+		} else {
+			refLogMessage = ""; //$NON-NLS-1$
 		}
+		refLogIncludeResult = appendStatus;
 		return this;
 	}
 
@@ -188,10 +185,9 @@ public class BatchRefUpdate {
 	 *
 	 * @return {@code this}.
 	 */
-	public BatchRefUpdate disableRefLog() {
+	public void disableRefLog() {
 		refLogMessage = null;
 		refLogIncludeResult = false;
-		return this;
 	}
 
 	/** @return true if log has been disabled by {@link #disableRefLog()}. */

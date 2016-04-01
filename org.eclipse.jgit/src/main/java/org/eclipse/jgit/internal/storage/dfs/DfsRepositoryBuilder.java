@@ -47,7 +47,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.eclipse.jgit.internal.JGitText;
-import org.eclipse.jgit.lib.BaseRepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 
 /**
  * Constructs a {@link DfsRepository}.
@@ -58,7 +58,7 @@ import org.eclipse.jgit.lib.BaseRepositoryBuilder;
  *            type of the repository class.
  */
 public abstract class DfsRepositoryBuilder<B extends DfsRepositoryBuilder, R extends DfsRepository>
-		extends BaseRepositoryBuilder<B, R> {
+		extends RepositoryBuilder<B, R> {
 	private DfsReaderOptions readerOptions;
 
 	private DfsRepositoryDescription repoDesc;

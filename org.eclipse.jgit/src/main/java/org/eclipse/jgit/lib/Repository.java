@@ -132,7 +132,7 @@ public abstract class Repository implements AutoCloseable {
 	 * @param options
 	 *            options to configure the repository.
 	 */
-	protected Repository(final BaseRepositoryBuilder options) {
+	protected Repository(final RepositoryBuilder options) {
 		gitDir = options.getGitDir();
 		fs = options.getFS();
 		workTree = options.getWorkTree();
@@ -1314,21 +1314,19 @@ public abstract class Repository implements AutoCloseable {
 		final String filePath = file.getPath();
 		final String workDirPath = workDir.getPath();
 
-		if (filePath.length() <= workDirPath.length()
-				|| filePath.charAt(workDirPath.length()) != File.separatorChar
-				|| !filePath.startsWith(workDirPath)) {
-			File absWd = workDir.isAbsolute() ? workDir
-					: workDir.getAbsoluteFile();
-			File absFile = file.isAbsolute() ? file : file.getAbsoluteFile();
-			if (absWd == workDir && absFile == file)
-				return ""; //$NON-NLS-1$
-			return stripWorkDir(absWd, absFile);
+		if (filePath.length() > workDirPath.length()
+				&& filePath.charAt(workDirPath.length()) == File.separatorChar
+				&& filePath.startsWith(workDirPath)) {
+			String relName = filePath.substring(workDirPath.length() + 1);
+			if (File.separatorChar != '/')
+				relName = relName.replace(File.separatorChar, '/');
+			return relName;
 		}
-
-		String relName = filePath.substring(workDirPath.length() + 1);
-		if (File.separatorChar != '/')
-			relName = relName.replace(File.separatorChar, '/');
-		return relName;
+		File absWd = workDir.isAbsolute() ? workDir : workDir.getAbsoluteFile();
+		File absFile = file.isAbsolute() ? file : file.getAbsoluteFile();
+		if (absWd == workDir && absFile == file)
+			return ""; //$NON-NLS-1$
+		return stripWorkDir(absWd, absFile);
 	}
 
 	/**
@@ -1754,7 +1752,9 @@ public abstract class Repository implements AutoCloseable {
 	private void writeHeadsFile(List<? extends ObjectId> heads, String filename)
 			throws FileNotFoundException, IOException {
 		File headsFile = new File(getDirectory(), filename);
-		if (heads != null) {
+		if (heads == null) {
+			FileUtils.delete(headsFile, FileUtils.SKIP_MISSING);
+		} else {
 			BufferedOutputStream bos = new SafeBufferedOutputStream(
 					new FileOutputStream(headsFile));
 			try {
@@ -1765,8 +1765,6 @@ public abstract class Repository implements AutoCloseable {
 			} finally {
 				bos.close();
 			}
-		} else {
-			FileUtils.delete(headsFile, FileUtils.SKIP_MISSING);
 		}
 	}
 

@@ -53,7 +53,7 @@ import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.AnyObjectId;
-import org.eclipse.jgit.lib.BaseRepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.BlobBasedConfig;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ConfigConstants;
@@ -228,7 +228,7 @@ public class SubmoduleWalk implements AutoCloseable {
 			return null;
 		File workTree = new File(parent, path);
 		try {
-			return new BaseRepositoryBuilder() //
+			return new RepositoryBuilder() //
 					.setMustExist(true) //
 					.setFS(FS.DETECTED) //
 					.setWorkTree(workTree) //

@@ -57,7 +57,7 @@ import java.util.List;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.errors.LargeObjectException;
-import org.eclipse.jgit.lib.BaseRepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.MutableObjectId;
@@ -270,7 +270,7 @@ class TextHashFunctions extends TextBuiltin {
 	@Override
 	protected void run() throws Exception {
 		if (gitDirs.isEmpty()) {
-			BaseRepositoryBuilder rb = new BaseRepositoryBuilder() //
+			RepositoryBuilder rb = new RepositoryBuilder() //
 					.setGitDir(new File(gitdir)) //
 					.readEnvironment() //
 					.findGitDir();
@@ -280,7 +280,7 @@ class TextHashFunctions extends TextBuiltin {
 		}
 
 		for (File dir : gitDirs) {
-			BaseRepositoryBuilder rb = new BaseRepositoryBuilder();
+			RepositoryBuilder rb = new RepositoryBuilder();
 			if (RepositoryCache.FileKey.isGitRepository(dir, FS.DETECTED))
 				rb.setGitDir(dir);
 			else

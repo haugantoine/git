@@ -85,7 +85,7 @@ import org.eclipse.jgit.util.SystemReader;
  * @see RepositoryBuilder
  * @see FileRepositoryBuilder
  */
-public class BaseRepositoryBuilder<B extends BaseRepositoryBuilder, R extends Repository> {
+public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository> {
 	private static boolean isSymRef(byte[] ref) {
 		if (ref.length < 9)
 			return false;

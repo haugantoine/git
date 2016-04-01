@@ -53,7 +53,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
-import org.eclipse.jgit.lib.BaseRepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -69,7 +69,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		FileUtils.mkdir(d);
 
 		assertEquals(r.getDirectory(),
-				new BaseRepositoryBuilder()
+				new RepositoryBuilder()
 				.findGitDir(d).getGitDir());
 	}
 
@@ -127,7 +127,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File dotGit = new File(dir, Constants.DOT_GIT);
 		new FileWriter(dotGit).append(
 				"gitdir: " + repo1.getDirectory().getAbsolutePath()).close();
-		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
+		RepositoryBuilder builder = new RepositoryBuilder();
 
 		builder.setWorkTree(dir);
 		builder.setMustExist(true);
@@ -148,7 +148,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		new FileWriter(dotGit).append("gitdir: ../" + Constants.DOT_GIT)
 				.close();
 
-		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
+		RepositoryBuilder builder = new RepositoryBuilder();
 		builder.setWorkTree(dir);
 		builder.setMustExist(true);
 		Repository repo2 = builder.build();
@@ -168,7 +168,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File dotGit = new File(dir, Constants.DOT_GIT);
 		new FileWriter(dotGit).append(
 				"gitdir: " + repo1.getDirectory().getAbsolutePath()).close();
-		BaseRepositoryBuilder builder = new BaseRepositoryBuilder();
+		RepositoryBuilder builder = new RepositoryBuilder();
 
 		builder.setWorkTree(dir);
 		builder.findGitDir(dir);

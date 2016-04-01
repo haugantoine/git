@@ -60,7 +60,7 @@ import org.eclipse.jgit.errors.NoRemoteRepositoryException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.internal.JGitText;
-import org.eclipse.jgit.lib.BaseRepositoryBuilder;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.transport.resolver.ReceivePackFactory;
@@ -170,7 +170,7 @@ class TransportLocal extends Transport implements PackTransport {
 
 	private Repository openRepo() throws TransportException {
 		try {
-			return new BaseRepositoryBuilder().setGitDir(remoteGitDir).build();
+			return new RepositoryBuilder().setGitDir(remoteGitDir).build();
 		} catch (IOException err) {
 			throw new TransportException(uri, JGitText.get().notAGitDirectory);
 		}

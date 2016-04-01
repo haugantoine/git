@@ -117,11 +117,9 @@ public class RevertCommandTest extends RepositoryTestCase {
 		assertFalse(history.hasNext());
 
 		ReflogReader reader = db.getReflogReader(Constants.HEAD);
-		assertTrue(reader.getLastEntry().getComment()
-				.startsWith("revert: Revert \""));
+		assertTrue(checkLastEntryComment(reader, "revert: Revert \""));
 		reader = db.getReflogReader(db.getBranch());
-		assertTrue(reader.getLastEntry().getComment()
-				.startsWith("revert: Revert \""));
+		assertTrue(checkLastEntryComment(reader, "revert: Revert \""));
 
 	}
 
@@ -164,11 +162,9 @@ public class RevertCommandTest extends RepositoryTestCase {
 		assertFalse(history.hasNext());
 
 		ReflogReader reader = db.getReflogReader(Constants.HEAD);
-		assertTrue(reader.getLastEntry().getComment()
-				.startsWith("revert: Revert \""));
+		assertTrue(checkLastEntryComment(reader, "revert: Revert \""));
 		reader = db.getReflogReader(db.getBranch());
-		assertTrue(reader.getLastEntry().getComment()
-				.startsWith("revert: Revert \""));
+		assertTrue(checkLastEntryComment(reader, "revert: Revert \""));
 
 	}
 
@@ -215,12 +211,16 @@ public class RevertCommandTest extends RepositoryTestCase {
 		assertFalse(history.hasNext());
 
 		ReflogReader reader = db.getReflogReader(Constants.HEAD);
-		assertTrue(reader.getLastEntry().getComment()
-				.startsWith("revert: Revert \""));
+		assertTrue(checkLastEntryComment(reader, "revert: Revert \""));
 		reader = db.getReflogReader(db.getBranch());
-		assertTrue(reader.getLastEntry().getComment()
-				.startsWith("revert: Revert \""));
+		assertTrue(checkLastEntryComment(reader, "revert: Revert \""));
 
+	}
+
+	private boolean checkLastEntryComment(ReflogReader reader, String value)
+			throws IOException {
+		return reader.getLastEntry().getComment()
+				.startsWith(value);
 	}
 
 	@Test
@@ -416,11 +416,9 @@ public class RevertCommandTest extends RepositoryTestCase {
 
 		if (reason == null) {
 			ReflogReader reader = db.getReflogReader(Constants.HEAD);
-			assertTrue(reader.getLastEntry().getComment()
-					.startsWith("revert: "));
+			assertTrue(checkLastEntryComment(reader, "revert: "));
 			reader = db.getReflogReader(db.getBranch());
-			assertTrue(reader.getLastEntry().getComment()
-					.startsWith("revert: "));
+			assertTrue(checkLastEntryComment(reader, "revert: "));
 		}
 	}
 }

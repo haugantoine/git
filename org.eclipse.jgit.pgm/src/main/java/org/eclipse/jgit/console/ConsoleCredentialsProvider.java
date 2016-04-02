@@ -129,20 +129,18 @@ public class ConsoleCredentialsProvider extends CredentialsProvider {
 	private boolean get(CredentialItem.StringType item) {
 		if (item.isValueSecure()) {
 			char[] v = cons.readPassword("%s: ", item.getPromptText()); //$NON-NLS-1$
-			if (v != null) {
-				item.setValue(new String(v));
-				return true;
-			} else {
+			if (v == null) {
 				return false;
 			}
+			item.setValue(new String(v));
+			return true;
 		} else {
 			String v = cons.readLine("%s: ", item.getPromptText()); //$NON-NLS-1$
-			if (v != null) {
-				item.setValue(v);
-				return true;
-			} else {
+			if (v == null) {
 				return false;
 			}
+			item.setValue(v);
+			return true;
 		}
 	}
 

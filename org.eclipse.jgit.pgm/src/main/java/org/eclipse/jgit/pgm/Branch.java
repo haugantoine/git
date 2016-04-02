@@ -117,12 +117,10 @@ class Branch extends TextBuiltin {
 		if (branchAndStartPoint.size() > 2) {
 			throw die(CLIText.get().tooManyRefsGiven);
 		}
-		if (branchAndStartPoint.size() == 1) {
-			branch = branchAndStartPoint.get(0);
-		} else {
-			branch = branchAndStartPoint.get(0);
+		if (branchAndStartPoint.size() == 2) {
 			otherBranch = branchAndStartPoint.get(1);
 		}
+		branch = branchAndStartPoint.get(0);
 	}
 
 	@Option(name = "--move", aliases = {
@@ -135,12 +133,10 @@ class Branch extends TextBuiltin {
 		if (currentAndNew.size() > 2) {
 			throw die(CLIText.get().tooManyRefsGiven);
 		}
-		if (currentAndNew.size() == 1) {
-			branch = currentAndNew.get(0);
-		} else {
-			branch = currentAndNew.get(0);
+		if (currentAndNew.size() != 1) {
 			otherBranch = currentAndNew.get(1);
 		}
+		branch = currentAndNew.get(0);
 	}
 
 	@Option(name = "--verbose", aliases = { "-v" }, usage = "usage_beVerbose")
@@ -158,14 +154,7 @@ class Branch extends TextBuiltin {
 
 	@Override
 	protected void run() throws Exception {
-		if (delete != null || deleteForce != null) {
-			if (delete != null) {
-				delete(delete, false);
-			}
-			if (deleteForce != null) {
-				delete(deleteForce, true);
-			}
-		} else {
+		if (delete == null && deleteForce == null) {
 			if (rename) {
 				String src, dst;
 				if (otherBranch == null) {
@@ -238,6 +227,13 @@ class Branch extends TextBuiltin {
 					rw = new RevWalk(db);
 				}
 				list();
+			}
+		} else {
+			if (delete != null) {
+				delete(delete, false);
+			}
+			if (deleteForce != null) {
+				delete(deleteForce, true);
 			}
 		}
 	}

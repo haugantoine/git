@@ -252,15 +252,15 @@ public abstract class WorkingTreeIterator extends AbstractTreeIterator {
 			//
 			DirCacheIterator i = state.walk.getTree(state.dirCacheTree,
 					DirCacheIterator.class);
-			if (i != null) {
+			if (i == null) {
+				contentIdOffset = 0;
+			} else {
 				DirCacheEntry ent = i.getDirCacheEntry();
 				if (ent != null && compareMetadata(ent) == MetadataDiff.EQUAL) {
 					contentIdOffset = i.idOffset();
 					contentIdFromPtr = ptr;
 					return contentId = i.idBuffer();
 				}
-				contentIdOffset = 0;
-			} else {
 				contentIdOffset = 0;
 			}
 		}
@@ -404,10 +404,7 @@ public abstract class WorkingTreeIterator extends AbstractTreeIterator {
 		switch (getOptions().getAutoCRLF()) {
 		case FALSE:
 		default:
-			if (getCleanFilterCommand() != null)
-				return true;
-			return false;
-
+			return getCleanFilterCommand() != null;
 		case TRUE:
 		case INPUT:
 			return true;
@@ -1206,12 +1203,12 @@ public abstract class WorkingTreeIterator extends AbstractTreeIterator {
 		@Override
 		IgnoreNode load() throws IOException {
 			IgnoreNode r;
-			if (entry != null) {
+			if (entry == null) {
+				r = new IgnoreNode();
+			} else {
 				r = super.load();
 				if (r == null)
 					r = new IgnoreNode();
-			} else {
-				r = new IgnoreNode();
 			}
 
 			FS fs = repository.getFS();

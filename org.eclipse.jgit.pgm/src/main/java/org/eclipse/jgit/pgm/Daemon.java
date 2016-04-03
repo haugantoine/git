@@ -57,7 +57,6 @@ import org.eclipse.jgit.storage.pack.PackConfig;
 import org.eclipse.jgit.transport.DaemonClient;
 import org.eclipse.jgit.transport.DaemonService;
 import org.eclipse.jgit.transport.resolver.FileResolver;
-import org.eclipse.jgit.util.FS;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
@@ -109,7 +108,7 @@ class Daemon extends TextBuiltin {
 						configFile.getAbsolutePath()));
 			}
 
-			FileBasedConfig cfg = new FileBasedConfig(configFile, FS.DETECTED);
+			FileBasedConfig cfg = new FileBasedConfig(configFile);
 			cfg.load();
 			new WindowCacheConfig().fromConfig(cfg).install();
 			packConfig.fromConfig(cfg);

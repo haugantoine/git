@@ -55,12 +55,11 @@ import java.io.IOException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Test;
 
@@ -216,7 +215,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 	private FileBasedConfig configFor(File gitDir) throws IOException,
 			ConfigInvalidException {
 		File configPath = new File(gitDir, Constants.CONFIG);
-		FileBasedConfig cfg = new FileBasedConfig(configPath, FS.DETECTED);
+		FileBasedConfig cfg = new FileBasedConfig(configPath);
 		cfg.load();
 		return cfg;
 	}

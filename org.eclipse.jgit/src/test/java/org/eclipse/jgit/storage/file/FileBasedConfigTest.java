@@ -52,7 +52,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.eclipse.jgit.errors.ConfigInvalidException;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.IO;
 import org.junit.After;
@@ -92,7 +91,7 @@ public class FileBasedConfigTest {
 	@Test
 	public void testSystemEncoding() throws IOException, ConfigInvalidException {
 		final File file = createFile(CONTENT1.getBytes());
-		final FileBasedConfig config = new FileBasedConfig(file, FS.DETECTED);
+		final FileBasedConfig config = new FileBasedConfig(file);
 		config.load();
 		assertEquals(ALICE, config.getString(USER, null, NAME));
 
@@ -104,7 +103,7 @@ public class FileBasedConfigTest {
 	@Test
 	public void testUTF8withoutBOM() throws IOException, ConfigInvalidException {
 		final File file = createFile(CONTENT1.getBytes("UTF-8"));
-		final FileBasedConfig config = new FileBasedConfig(file, FS.DETECTED);
+		final FileBasedConfig config = new FileBasedConfig(file);
 		config.load();
 		assertEquals(ALICE, config.getString(USER, null, NAME));
 
@@ -122,7 +121,7 @@ public class FileBasedConfigTest {
 		bos1.write(CONTENT1.getBytes("UTF-8"));
 
 		final File file = createFile(bos1.toByteArray());
-		final FileBasedConfig config = new FileBasedConfig(file, FS.DETECTED);
+		final FileBasedConfig config = new FileBasedConfig(file);
 		config.load();
 		assertEquals(ALICE, config.getString(USER, null, NAME));
 
@@ -144,7 +143,7 @@ public class FileBasedConfigTest {
 		bos1.write(CONTENT1.getBytes());
 
 		final File file = createFile(bos1.toByteArray());
-		final FileBasedConfig config = new FileBasedConfig(file, FS.DETECTED);
+		final FileBasedConfig config = new FileBasedConfig(file);
 		config.load();
 		assertEquals(ALICE, config.getString(USER, null, NAME));
 

@@ -67,8 +67,8 @@ import org.eclipse.jgit.util.SystemReader;
  */
 public class MockSystemReader extends SystemReader {
 	private final class MockConfig extends FileBasedConfig {
-		private MockConfig(File cfgLocation, FS fs) {
-			super(cfgLocation, fs);
+		private MockConfig(File cfgLocation) {
+			super(cfgLocation);
 		}
 
 		@Override
@@ -97,8 +97,8 @@ public class MockSystemReader extends SystemReader {
 		init(Constants.GIT_COMMITTER_NAME_KEY);
 		init(Constants.GIT_COMMITTER_EMAIL_KEY);
 		setProperty(Constants.OS_USER_DIR, ".");
-		userGitConfig = new MockConfig(null, null);
-		systemGitConfig = new MockConfig(null, null);
+		userGitConfig = new MockConfig(null);
+		systemGitConfig = new MockConfig(null);
 		setCurrentPlatform();
 	}
 

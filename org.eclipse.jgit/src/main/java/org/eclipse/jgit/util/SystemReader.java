@@ -96,7 +96,7 @@ public abstract class SystemReader {
 		public FileBasedConfig openSystemConfig(Config parent, FS fs) {
 			File configFile = fs.getGitSystemConfig();
 			if (configFile == null) {
-				return new FileBasedConfig(null, fs) {
+				return new FileBasedConfig(null) {
 					public void load() {
 						// empty, do not load
 					}
@@ -107,12 +107,12 @@ public abstract class SystemReader {
 					}
 				};
 			}
-			return new FileBasedConfig(parent, configFile, fs);
+			return new FileBasedConfig(parent, configFile);
 		}
 
 		public FileBasedConfig openUserConfig(Config parent, FS fs) {
 			final File home = fs.userHome();
-			return new FileBasedConfig(parent, new File(home, ".gitconfig"), fs); //$NON-NLS-1$
+			return new FileBasedConfig(parent, new File(home, ".gitconfig")); //$NON-NLS-1$
 		}
 
 		public String getHostname() {

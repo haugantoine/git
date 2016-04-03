@@ -66,7 +66,6 @@ import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.internal.storage.file.ObjectDirectory.AlternateHandle;
 import org.eclipse.jgit.internal.storage.file.ObjectDirectory.AlternateRepository;
 import org.eclipse.jgit.internal.storage.reftree.RefTreeDatabase;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.CoreConfig.HideDotFiles;
@@ -77,8 +76,8 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.jgit.util.SystemReader;
@@ -175,7 +174,7 @@ public class FileRepository extends Repository {
 			systemConfig = SystemReader.getInstance().openSystemConfig(null,
 					getFS());
 		else
-			systemConfig = new FileBasedConfig(null, FS.DETECTED) {
+			systemConfig = new FileBasedConfig(null) {
 				public void load() {
 					// empty, do not load
 				}
@@ -188,8 +187,7 @@ public class FileRepository extends Repository {
 		userConfig = SystemReader.getInstance().openUserConfig(systemConfig,
 				getFS());
 		repoConfig = new FileBasedConfig(userConfig, getFS().resolve(
-				getDirectory(), Constants.CONFIG),
-				getFS());
+				getDirectory(), Constants.CONFIG));
 
 		loadSystemConfig();
 		loadUserConfig();

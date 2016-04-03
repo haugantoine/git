@@ -55,8 +55,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.MessageFormat;
 
-import org.eclipse.jgit.errors.LockFailedException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
+import org.eclipse.jgit.errors.LockFailedException;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.internal.storage.file.FileSnapshot;
 import org.eclipse.jgit.internal.storage.file.LockFile;
@@ -64,7 +64,6 @@ import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.RawParseUtils;
 
@@ -89,8 +88,8 @@ public class FileBasedConfig extends StoredConfig {
 	 *            the file system abstraction which will be necessary to perform
 	 *            certain file system operations.
 	 */
-	public FileBasedConfig(File cfgLocation, FS fs) {
-		this(null, cfgLocation, fs);
+	public FileBasedConfig(File cfgLocation) {
+		this(null, cfgLocation);
 	}
 
 	/**
@@ -104,7 +103,7 @@ public class FileBasedConfig extends StoredConfig {
 	 *            the file system abstraction which will be necessary to perform
 	 *            certain file system operations.
 	 */
-	public FileBasedConfig(Config base, File cfgLocation, FS fs) {
+	public FileBasedConfig(Config base, File cfgLocation) {
 		super(base);
 		configFile = cfgLocation;
 		this.snapshot = FileSnapshot.DIRTY;

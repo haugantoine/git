@@ -57,7 +57,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.util.FS;
 import org.junit.Test;
 
 public class RepoCommandTest extends RepositoryTestCase {
@@ -736,8 +735,7 @@ public class RepoCommandTest extends RepositoryTestCase {
 						".gitmodules");
 				assertTrue("The .gitmodules file should exist",
 						gitmodules.exists());
-				FileBasedConfig c = new FileBasedConfig(gitmodules,
-						FS.DETECTED);
+				FileBasedConfig c = new FileBasedConfig(gitmodules);
 				c.load();
 				assertEquals("standard branches work", "master",
 						c.getString("submodule", "with-branch", "branch"));

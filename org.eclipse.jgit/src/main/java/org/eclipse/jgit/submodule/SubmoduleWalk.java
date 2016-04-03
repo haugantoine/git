@@ -412,8 +412,7 @@ public class SubmoduleWalk implements AutoCloseable {
 		if (rootTree == null) {
 			File modulesFile = new File(repository.getWorkTree(),
 					Constants.DOT_GIT_MODULES);
-			FileBasedConfig config = new FileBasedConfig(modulesFile,
-					repository.getFS());
+			FileBasedConfig config = new FileBasedConfig(modulesFile);
 			config.load();
 			modulesConfig = config;
 		} else {

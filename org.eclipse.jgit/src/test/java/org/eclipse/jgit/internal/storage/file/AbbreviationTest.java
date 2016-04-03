@@ -46,6 +46,7 @@ package org.eclipse.jgit.internal.storage.file;
 import static org.eclipse.jgit.lib.Constants.OBJECT_ID_LENGTH;
 import static org.eclipse.jgit.lib.Constants.OBJECT_ID_STRING_LENGTH;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -60,12 +61,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.jgit.errors.AmbiguousObjectException;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
-import org.eclipse.jgit.internal.storage.file.PackIndexWriter;
-import org.eclipse.jgit.internal.storage.file.PackIndexWriterV2;
-import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
@@ -77,17 +75,28 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class AbbreviationTest extends LocalDiskRepositoryTestCase {
+public class AbbreviationTest {
 	private FileRepository db;
 
 	private ObjectReader reader;
 
 	private TestRepository<Repository> test;
 
+	private File tmp;
+
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-		db = createBareRepository();
+		tmp = File.createTempFile("jgit_test_", "_tmp");
+		if (!tmp.delete() || !tmp.mkdir())
+			throw new IOException("Cannot create " + tmp);
+		File gitdir = File.createTempFile("tmp_", Constants.DOT_GIT, tmp);
+		if (!gitdir.delete()) {
+			throw new IOException("Cannot obtain unique path " + tmp);
+		}
+		System.out.println(gitdir.getPath());
+		db = new FileRepository(gitdir);
+		assertFalse(gitdir.exists());
+		db.create(true);
 		reader = db.newObjectReader();
 		test = new TestRepository<Repository>(db);
 	}
@@ -97,17 +106,36 @@ public class AbbreviationTest extends LocalDiskRepositoryTestCase {
 		if (reader != null) {
 			reader.close();
 		}
+		if (db != null) {
+			db.close();
+		}
+		if (tmp != null)
+			recursiveDelete(tmp);
+	}
+
+	private void recursiveDelete(final File directory) {
+		if (!directory.exists())
+			return;
+		final File[] directoryListFiles = directory.listFiles();
+		if (directoryListFiles != null) {
+			for (File subFile : directoryListFiles) {
+				if (subFile.isDirectory())
+					recursiveDelete(subFile);
+				else if (!subFile.delete()) {
+					fail("ERROR: Failed to delete " + subFile);
+				}
+			}
+		}
+		if (!directory.delete()) {
+			fail("ERROR: Failed to delete " + directory);
+		}
 	}
 
 	@Test
 	public void testAbbreviateOnEmptyRepository() throws IOException {
 		ObjectId id = id("9d5b926ed164e8ee88d3b8b1e525d699adda01ba");
 
-		assertEquals(id.abbreviate(2), reader.abbreviate(id, 2));
-		assertEquals(id.abbreviate(7), reader.abbreviate(id, 7));
-		assertEquals(id.abbreviate(8), reader.abbreviate(id, 8));
-		assertEquals(id.abbreviate(10), reader.abbreviate(id, 10));
-		assertEquals(id.abbreviate(16), reader.abbreviate(id, 16));
+		assertAbbreviate(id);
 
 		assertEquals(AbbreviatedObjectId.fromObjectId(id), //
 				reader.abbreviate(id, OBJECT_ID_STRING_LENGTH));
@@ -124,15 +152,19 @@ public class AbbreviationTest extends LocalDiskRepositoryTestCase {
 		assertEquals(id, matches.iterator().next());
 	}
 
-	@Test
-	public void testAbbreviateLooseBlob() throws Exception {
-		ObjectId id = test.blob("test");
-
+	private void assertAbbreviate(ObjectId id) throws IOException {
 		assertEquals(id.abbreviate(2), reader.abbreviate(id, 2));
 		assertEquals(id.abbreviate(7), reader.abbreviate(id, 7));
 		assertEquals(id.abbreviate(8), reader.abbreviate(id, 8));
 		assertEquals(id.abbreviate(10), reader.abbreviate(id, 10));
 		assertEquals(id.abbreviate(16), reader.abbreviate(id, 16));
+	}
+
+	@Test
+	public void testAbbreviateLooseBlob() throws Exception {
+		ObjectId id = test.blob("test");
+
+		assertAbbreviate(id);
 
 		Collection<ObjectId> matches = reader.resolve(reader.abbreviate(id, 8));
 		assertNotNull(matches);

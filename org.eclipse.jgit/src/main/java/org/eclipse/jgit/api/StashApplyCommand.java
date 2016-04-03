@@ -125,7 +125,8 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 	 * @return {@code this}
 	 * @since 3.2
 	 */
-	public StashApplyCommand ignoreRepositoryState(boolean willIgnoreRepositoryState) {
+	public StashApplyCommand ignoreRepositoryState(
+			boolean willIgnoreRepositoryState) {
 		this.ignoreRepositoryState = willIgnoreRepositoryState;
 		return this;
 	}
@@ -136,12 +137,12 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 		try {
 			stashId = repo.resolve(revision);
 		} catch (IOException e) {
-			throw new InvalidRefNameException(MessageFormat.format(
-					JGitText.get().stashResolveFailed, revision), e);
+			throw new InvalidRefNameException(MessageFormat
+					.format(JGitText.get().stashResolveFailed, revision), e);
 		}
 		if (stashId == null)
-			throw new InvalidRefNameException(MessageFormat.format(
-					JGitText.get().stashResolveFailed, revision));
+			throw new InvalidRefNameException(MessageFormat
+					.format(JGitText.get().stashResolveFailed, revision));
 		return stashId;
 	}
 
@@ -155,9 +156,9 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 	 * @throws NoHeadException
 	 * @throws StashApplyFailureException
 	 */
-	public ObjectId call() throws GitAPIException,
-			WrongRepositoryStateException, NoHeadException,
-			StashApplyFailureException {
+	public ObjectId call()
+			throws GitAPIException, WrongRepositoryStateException,
+			NoHeadException, StashApplyFailureException {
 		checkCallable();
 
 		if (!ignoreRepositoryState
@@ -183,8 +184,8 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 						Integer.valueOf(stashCommit.getParentCount())));
 
 			ObjectId headTree = repo.resolve(Constants.HEAD + "^{tree}"); //$NON-NLS-1$
-			ObjectId stashIndexCommit = revWalk.parseCommit(stashCommit
-					.getParent(1));
+			ObjectId stashIndexCommit = revWalk
+					.parseCommit(stashCommit.getParent(1));
 			ObjectId stashHeadCommit = stashCommit.getParent(0);
 			ObjectId untrackedCommit = null;
 			if (applyUntracked && stashCommit.getParentCount() == 3)
@@ -195,53 +196,49 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 					"stash" }); //$NON-NLS-1$
 			merger.setBase(stashHeadCommit);
 			merger.setWorkingTreeIterator(new FileTreeIterator(repo));
-			if (merger.merge(headCommit, stashCommit)) {
-				DirCache dc = repo.lockDirCache();
-				DirCacheCheckout dco = new DirCacheCheckout(repo, headTree,
-						dc, merger.getResultTreeId());
-				dco.setFailOnConflict(true);
-				dco.checkout(); // Ignoring failed deletes....
-				if (applyIndex) {
-					ResolveMerger ixMerger = (ResolveMerger) strategy
-							.newMerger(repo, true);
-					ixMerger.setCommitNames(new String[] { "stashed HEAD", //$NON-NLS-1$
-							"HEAD", "stashed index" }); //$NON-NLS-1$//$NON-NLS-2$
-					ixMerger.setBase(stashHeadCommit);
-					boolean ok = ixMerger.merge(headCommit, stashIndexCommit);
-					if (ok) {
-						resetIndex(revWalk
-								.parseTree(ixMerger.getResultTreeId()));
-					} else {
+			if (!merger.merge(headCommit, stashCommit)) {
+				throw new StashApplyFailureException(
+						JGitText.get().stashApplyConflict);
+			}
+			DirCache dc = repo.lockDirCache();
+			DirCacheCheckout dco = new DirCacheCheckout(repo, headTree, dc,
+					merger.getResultTreeId());
+			dco.setFailOnConflict(true);
+			dco.checkout(); // Ignoring failed deletes....
+			if (applyIndex) {
+				ResolveMerger ixMerger = (ResolveMerger) strategy
+						.newMerger(repo, true);
+				ixMerger.setCommitNames(new String[] { "stashed HEAD", //$NON-NLS-1$
+						"HEAD", "stashed index" }); //$NON-NLS-1$//$NON-NLS-2$
+				ixMerger.setBase(stashHeadCommit);
+				boolean ok = ixMerger.merge(headCommit, stashIndexCommit);
+				if (ok) {
+					resetIndex(revWalk.parseTree(ixMerger.getResultTreeId()));
+				} else {
+					throw new StashApplyFailureException(
+							JGitText.get().stashApplyConflict);
+				}
+			}
+
+			if (untrackedCommit != null) {
+				ResolveMerger untrackedMerger = (ResolveMerger) strategy
+						.newMerger(repo, true);
+				untrackedMerger.setCommitNames(new String[] { "stashed HEAD", //$NON-NLS-1$
+						"HEAD", "untracked files" }); //$NON-NLS-1$//$NON-NLS-2$
+				untrackedMerger.setBase(stashHeadCommit);
+				boolean ok = untrackedMerger.merge(headCommit, untrackedCommit);
+				if (ok)
+					try {
+						RevTree untrackedTree = revWalk
+								.parseTree(untrackedMerger.getResultTreeId());
+						resetUntracked(untrackedTree);
+					} catch (CheckoutConflictException e) {
 						throw new StashApplyFailureException(
 								JGitText.get().stashApplyConflict);
 					}
-				}
-
-				if (untrackedCommit != null) {
-					ResolveMerger untrackedMerger = (ResolveMerger) strategy
-							.newMerger(repo, true);
-					untrackedMerger.setCommitNames(new String[] {
-							"stashed HEAD", "HEAD", "untracked files" }); //$NON-NLS-1$//$NON-NLS-2$//$NON-NLS-3$
-					untrackedMerger.setBase(stashHeadCommit);
-					boolean ok = untrackedMerger.merge(headCommit,
-							untrackedCommit);
-					if (ok)
-						try {
-							RevTree untrackedTree = revWalk
-									.parseTree(untrackedMerger
-											.getResultTreeId());
-							resetUntracked(untrackedTree);
-						} catch (CheckoutConflictException e) {
-							throw new StashApplyFailureException(
-									JGitText.get().stashApplyConflict);
-						}
-					else
-						throw new StashApplyFailureException(
-								JGitText.get().stashApplyConflict);
-				}
-			} else {
-				throw new StashApplyFailureException(
-						JGitText.get().stashApplyConflict);
+				else
+					throw new StashApplyFailureException(
+							JGitText.get().stashApplyConflict);
 			}
 			return stashId;
 
@@ -298,7 +295,8 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 					continue;
 				}
 
-				final DirCacheEntry entry = new DirCacheEntry(walk.getRawPath());
+				final DirCacheEntry entry = new DirCacheEntry(
+						walk.getRawPath());
 				entry.setFileMode(cIter.getEntryFileMode());
 				entry.setObjectIdFromRaw(cIter.idBuffer(), cIter.idOffset());
 
@@ -319,8 +317,8 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 		}
 	}
 
-	private void resetUntracked(RevTree tree) throws CheckoutConflictException,
-			IOException {
+	private void resetUntracked(RevTree tree)
+			throws CheckoutConflictException, IOException {
 		// TODO maybe NameConflictTreeWalk ?
 		try (TreeWalk walk = new TreeWalk(repo)) {
 			walk.addTree(tree);
@@ -336,12 +334,13 @@ public class StashApplyCommand extends GitCommand<ObjectId> {
 					// Not in commit, don't create untracked
 					continue;
 
-				final DirCacheEntry entry = new DirCacheEntry(walk.getRawPath());
+				final DirCacheEntry entry = new DirCacheEntry(
+						walk.getRawPath());
 				entry.setFileMode(cIter.getEntryFileMode());
 				entry.setObjectIdFromRaw(cIter.idBuffer(), cIter.idOffset());
 
-				FileTreeIterator fIter = walk
-						.getTree(1, FileTreeIterator.class);
+				FileTreeIterator fIter = walk.getTree(1,
+						FileTreeIterator.class);
 				if (fIter != null) {
 					if (fIter.isModified(entry, true, reader)) {
 						// file exists and is dirty

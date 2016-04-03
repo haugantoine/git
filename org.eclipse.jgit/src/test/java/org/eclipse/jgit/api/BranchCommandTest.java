@@ -75,6 +75,18 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class BranchCommandTest extends RepositoryTestCase {
+	private static final String SECOND_COMMIT_MESSAGE = "Second commit";
+
+	private static final String INITIAL_COMMIT_MESSAGE = "Initial commit";
+
+	private static final String TEST_TXT = "Test.txt"; //$NON-NLS-1$
+
+	private static final String FOR_DELETE_BRANCH_NAME = "ForDelete"; //$NON-NLS-1$
+
+	private static final String MASTER_BRANCH = "master"; //$NON-NLS-1$
+
+	private static final String NEW_FORCE_BRANCH_NAME = "NewForce"; //$NON-NLS-1$
+
 	private Git git;
 
 	RevCommit initialCommit;
@@ -87,14 +99,14 @@ public class BranchCommandTest extends RepositoryTestCase {
 		super.setUp();
 		git = new Git(db);
 		// checkout master
-		git.commit().setMessage("initial commit").call();
+		git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
 		// commit something
-		writeTrashFile("Test.txt", "Hello world");
-		git.add().addFilepattern("Test.txt").call();
-		initialCommit = git.commit().setMessage("Initial commit").call();
-		writeTrashFile("Test.txt", "Some change");
-		git.add().addFilepattern("Test.txt").call();
-		secondCommit = git.commit().setMessage("Second commit").call();
+		writeTrashFile(TEST_TXT, "Hello world");
+		git.add().addFilepattern(TEST_TXT).call();
+		initialCommit = git.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
+		writeTrashFile(TEST_TXT, "Some change");
+		git.add().addFilepattern(TEST_TXT).call();
+		secondCommit = git.commit().setMessage(SECOND_COMMIT_MESSAGE).call();
 		// create a master branch
 		RefUpdate rup = db.updateRef("refs/heads/master");
 		rup.setNewObjectId(initialCommit.getId());
@@ -106,12 +118,12 @@ public class BranchCommandTest extends RepositoryTestCase {
 		Repository remoteRepository = createWorkRepository();
 		try (Git remoteGit = new Git(remoteRepository)) {
 			// commit something
-			writeTrashFile("Test.txt", "Hello world");
-			remoteGit.add().addFilepattern("Test.txt").call();
-			initialCommit = remoteGit.commit().setMessage("Initial commit").call();
-			writeTrashFile("Test.txt", "Some change");
-			remoteGit.add().addFilepattern("Test.txt").call();
-			secondCommit = remoteGit.commit().setMessage("Second commit").call();
+			writeTrashFile(TEST_TXT, "Hello world");
+			remoteGit.add().addFilepattern(TEST_TXT).call();
+			initialCommit = remoteGit.commit().setMessage(INITIAL_COMMIT_MESSAGE).call();
+			writeTrashFile(TEST_TXT, "Some change");
+			remoteGit.add().addFilepattern(TEST_TXT).call();
+			secondCommit = remoteGit.commit().setMessage(SECOND_COMMIT_MESSAGE).call();
 			// create a master branch
 			RefUpdate rup = remoteRepository.updateRef("refs/heads/master");
 			rup.setNewObjectId(initialCommit.getId());
@@ -153,7 +165,7 @@ public class BranchCommandTest extends RepositoryTestCase {
 		}
 		// existing name not allowed w/o force
 		try {
-			git.branchCreate().setName("master").call();
+			git.branchCreate().setName(MASTER_BRANCH).call();
 			fail("Create branch with existing ref name should fail");
 		} catch (RefAlreadyExistsException e) {
 			// expected
@@ -165,7 +177,7 @@ public class BranchCommandTest extends RepositoryTestCase {
 		allBefore = git.branchList().setListMode(ListMode.ALL).call().size();
 
 		assertEquals(localBefore + remoteBefore, allBefore);
-		Ref newBranch = createBranch(git, "NewForTestList", false, "master",
+		Ref newBranch = createBranch(git, "NewForTestList", false, MASTER_BRANCH,
 				null);
 		assertEquals("refs/heads/NewForTestList", newBranch.getName());
 
@@ -178,7 +190,7 @@ public class BranchCommandTest extends RepositoryTestCase {
 				- allBefore);
 		// we can only create local branches
 		newBranch = createBranch(git,
-				"refs/remotes/origin/NewRemoteForTestList", false, "master",
+				"refs/remotes/origin/NewRemoteForTestList", false, MASTER_BRANCH,
 				null);
 		assertEquals("refs/heads/refs/remotes/origin/NewRemoteForTestList",
 				newBranch.getName());
@@ -232,32 +244,32 @@ public class BranchCommandTest extends RepositoryTestCase {
 	@Test
 	public void testCreateForce() throws Exception {
 		// using commits
-		Ref newBranch = createBranch(git, "NewForce", false, secondCommit
+		Ref newBranch = createBranch(git, NEW_FORCE_BRANCH_NAME, false, secondCommit
 				.getId().name(), null);
 		assertEquals(newBranch.getTarget().getObjectId(), secondCommit.getId());
 		try {
-			newBranch = createBranch(git, "NewForce", false, initialCommit
+			newBranch = createBranch(git, NEW_FORCE_BRANCH_NAME, false, initialCommit
 					.getId().name(), null);
 			fail("Should have failed");
 		} catch (RefAlreadyExistsException e) {
 			// expected
 		}
-		newBranch = createBranch(git, "NewForce", true, initialCommit.getId()
+		newBranch = createBranch(git, NEW_FORCE_BRANCH_NAME, true, initialCommit.getId()
 				.name(), null);
 		assertEquals(newBranch.getTarget().getObjectId(), initialCommit.getId());
-		git.branchDelete().setBranchNames("NewForce").call();
+		git.branchDelete().setBranchNames(NEW_FORCE_BRANCH_NAME).call();
 		// using names
 
-		git.branchCreate().setName("NewForce").setStartPoint("master").call();
+		git.branchCreate().setName(NEW_FORCE_BRANCH_NAME).setStartPoint(MASTER_BRANCH).call();
 		assertEquals(newBranch.getTarget().getObjectId(), initialCommit.getId());
 		try {
-			git.branchCreate().setName("NewForce").setStartPoint("master")
+			git.branchCreate().setName(NEW_FORCE_BRANCH_NAME).setStartPoint(MASTER_BRANCH)
 					.call();
 			fail("Should have failed");
 		} catch (RefAlreadyExistsException e) {
 			// expected
 		}
-		git.branchCreate().setName("NewForce").setStartPoint("master")
+		git.branchCreate().setName(NEW_FORCE_BRANCH_NAME).setStartPoint(MASTER_BRANCH)
 				.setForce(true).call();
 		assertEquals(newBranch.getTarget().getObjectId(), initialCommit.getId());
 	}
@@ -286,43 +298,43 @@ public class BranchCommandTest extends RepositoryTestCase {
 
 	@Test
 	public void testDelete() throws Exception {
-		createBranch(git, "ForDelete", false, "master", null);
-		git.branchDelete().setBranchNames("ForDelete").call();
+		createBranch(git, FOR_DELETE_BRANCH_NAME, false, MASTER_BRANCH, null);
+		git.branchDelete().setBranchNames(FOR_DELETE_BRANCH_NAME).call();
 		// now point the branch to a non-merged commit
-		createBranch(git, "ForDelete", false, secondCommit.getId().name(), null);
+		createBranch(git, FOR_DELETE_BRANCH_NAME, false, secondCommit.getId().name(), null);
 		try {
-			git.branchDelete().setBranchNames("ForDelete").call();
+			git.branchDelete().setBranchNames(FOR_DELETE_BRANCH_NAME).call();
 			fail("Deletion of a non-merged branch without force should have failed");
 		} catch (NotMergedException e) {
 			// expected
 		}
-		List<String> deleted = git.branchDelete().setBranchNames("ForDelete")
+		List<String> deleted = git.branchDelete().setBranchNames(FOR_DELETE_BRANCH_NAME)
 				.setForce(true).call();
 		assertEquals(1, deleted.size());
-		assertEquals(Constants.R_HEADS + "ForDelete", deleted.get(0));
-		createBranch(git, "ForDelete", false, "master", null);
+		assertEquals(Constants.R_HEADS + FOR_DELETE_BRANCH_NAME, deleted.get(0));
+		createBranch(git, FOR_DELETE_BRANCH_NAME, false, MASTER_BRANCH, null);
 		try {
-			createBranch(git, "ForDelete", false, "master", null);
+			createBranch(git, FOR_DELETE_BRANCH_NAME, false, MASTER_BRANCH, null);
 			fail("Repeated creation of same branch without force should fail");
 		} catch (RefAlreadyExistsException e) {
 			// expected
 		}
 		// change starting point
-		Ref newBranch = createBranch(git, "ForDelete", true, initialCommit
+		Ref newBranch = createBranch(git, FOR_DELETE_BRANCH_NAME, true, initialCommit
 				.name(), null);
 		assertEquals(newBranch.getTarget().getObjectId(), initialCommit.getId());
-		newBranch = createBranch(git, "ForDelete", true, secondCommit.name(),
+		newBranch = createBranch(git, FOR_DELETE_BRANCH_NAME, true, secondCommit.name(),
 				null);
 		assertEquals(newBranch.getTarget().getObjectId(), secondCommit.getId());
-		git.branchDelete().setBranchNames("ForDelete").setForce(true);
+		git.branchDelete().setBranchNames(FOR_DELETE_BRANCH_NAME).setForce(true);
 		try {
-			git.branchDelete().setBranchNames("master").call();
+			git.branchDelete().setBranchNames(MASTER_BRANCH).call();
 			fail("Deletion of checked out branch without force should have failed");
 		} catch (CannotDeleteCurrentBranchException e) {
 			// expected
 		}
 		try {
-			git.branchDelete().setBranchNames("master").setForce(true).call();
+			git.branchDelete().setBranchNames(MASTER_BRANCH).setForce(true).call();
 			fail("Deletion of checked out branch with force should have failed");
 		} catch (CannotDeleteCurrentBranchException e) {
 			// expected
@@ -365,12 +377,12 @@ public class BranchCommandTest extends RepositoryTestCase {
 	public void testPullConfigLocalBranch() throws Exception {
 		Git localGit = setUpRepoWithRemote();
 		// by default, we should not create pull configuration
-		createBranch(localGit, "newFromMaster", false, "master", null);
+		createBranch(localGit, "newFromMaster", false, MASTER_BRANCH, null);
 		assertNull(localGit.getRepository().getConfig().getString("branch",
 				"newFromMaster", "remote"));
 		localGit.branchDelete().setBranchNames("newFromMaster").call();
 		// use --track
-		createBranch(localGit, "newFromMaster", false, "master",
+		createBranch(localGit, "newFromMaster", false, MASTER_BRANCH,
 				SetupUpstreamMode.TRACK);
 		assertEquals(".", localGit.getRepository().getConfig().getString(
 				"branch", "newFromMaster", "remote"));
@@ -385,12 +397,12 @@ public class BranchCommandTest extends RepositoryTestCase {
 	public void testPullConfigRenameLocalBranch() throws Exception {
 		Git localGit = setUpRepoWithRemote();
 		// by default, we should not create pull configuration
-		createBranch(localGit, "newFromMaster", false, "master", null);
+		createBranch(localGit, "newFromMaster", false, MASTER_BRANCH, null);
 		assertNull(localGit.getRepository().getConfig().getString("branch",
 				"newFromMaster", "remote"));
 		localGit.branchDelete().setBranchNames("newFromMaster").call();
 		// use --track
-		createBranch(localGit, "newFromMaster", false, "master",
+		createBranch(localGit, "newFromMaster", false, MASTER_BRANCH,
 				SetupUpstreamMode.TRACK);
 		assertEquals(".", localGit.getRepository().getConfig().getString(
 				"branch", "newFromMaster", "remote"));
@@ -428,9 +440,9 @@ public class BranchCommandTest extends RepositoryTestCase {
 			// expected
 		}
 		// create some branch
-		createBranch(git, "existing", false, "master", null);
+		createBranch(git, "existing", false, MASTER_BRANCH, null);
 		// a local branch
-		Ref branch = createBranch(git, "fromMasterForRename", false, "master",
+		Ref branch = createBranch(git, "fromMasterForRename", false, MASTER_BRANCH,
 				null);
 		assertEquals(Constants.R_HEADS + "fromMasterForRename", branch
 				.getName());

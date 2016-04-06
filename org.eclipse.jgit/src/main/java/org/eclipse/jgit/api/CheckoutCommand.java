@@ -119,9 +119,9 @@ import org.eclipse.jgit.treewalk.filter.PathFilterGroup;
  * 		.setStartPoint(&quot;origin/stable&quot;).call();
  * </pre>
  *
- * @see <a
- *      href="http://www.kernel.org/pub/software/scm/git/docs/git-checkout.html"
- *      >Git documentation about Checkout</a>
+ * @see <a href=
+ *      "http://www.kernel.org/pub/software/scm/git/docs/git-checkout.html" >Git
+ *      documentation about Checkout</a>
  */
 public class CheckoutCommand extends GitCommand<Ref> {
 
@@ -211,10 +211,10 @@ public class CheckoutCommand extends GitCommand<Ref> {
 				try (Git git = new Git(repo)) {
 					CreateBranchCommand command = git.branchCreate();
 					command.setName(name);
-					if (startCommit != null)
-						command.setStartPoint(startCommit);
-					else
+					if (startCommit == null)
 						command.setStartPoint(startPoint);
+					else
+						command.setStartPoint(startCommit);
 					if (upstreamMode != null)
 						command.setUpstreamMode(upstreamMode);
 					command.call();
@@ -233,8 +233,8 @@ public class CheckoutCommand extends GitCommand<Ref> {
 			ObjectId branch;
 			if (orphan) {
 				if (startPoint == null && startCommit == null) {
-					Result r = repo.updateRef(Constants.HEAD).link(
-							getBranchName());
+					Result r = repo.updateRef(Constants.HEAD)
+							.link(getBranchName());
 					if (!EnumSet.of(Result.NEW, Result.FORCED).contains(r))
 						throw new JGitInternalException(MessageFormat.format(
 								JGitText.get().checkoutUnexpectedResult,
@@ -246,8 +246,8 @@ public class CheckoutCommand extends GitCommand<Ref> {
 			} else {
 				branch = repo.resolve(name);
 				if (branch == null)
-					throw new RefNotFoundException(MessageFormat.format(
-							JGitText.get().refNotResolved, name));
+					throw new RefNotFoundException(MessageFormat
+							.format(JGitText.get().refNotResolved, name));
 			}
 
 			RevCommit headCommit = null;
@@ -295,31 +295,23 @@ public class CheckoutCommand extends GitCommand<Ref> {
 
 			setCallable(false);
 
-			boolean ok = false;
-			switch (updateResult) {
-			case NEW:
-				ok = true;
-				break;
-			case NO_CHANGE:
-			case FAST_FORWARD:
-			case FORCED:
-				ok = true;
-				break;
-			default:
-				break;
-			}
+			boolean ok = updateResult == Result.NEW
+					|| updateResult == Result.NO_CHANGE
+					|| updateResult == Result.FAST_FORWARD
+					|| updateResult == Result.FORCED;
 
 			if (!ok)
-				throw new JGitInternalException(MessageFormat.format(JGitText
-						.get().checkoutUnexpectedResult, updateResult.name()));
-
+				throw new JGitInternalException(MessageFormat.format(
+						JGitText.get().checkoutUnexpectedResult,
+						updateResult.name()));
 
 			if (!dco.getToBeDeleted().isEmpty()) {
 				status = new CheckoutResult(Status.NONDELETED,
 						dco.getToBeDeleted());
 			} else
-				status = new CheckoutResult(new ArrayList<String>(dco
-						.getUpdated().keySet()), dco.getRemoved());
+				status = new CheckoutResult(
+						new ArrayList<String>(dco.getUpdated().keySet()),
+						dco.getRemoved());
 
 			return ref;
 		} catch (IOException ioe) {
@@ -391,8 +383,8 @@ public class CheckoutCommand extends GitCommand<Ref> {
 	 * @throws IOException
 	 * @throws RefNotFoundException
 	 */
-	protected CheckoutCommand checkoutPaths() throws IOException,
-			RefNotFoundException {
+	protected CheckoutCommand checkoutPaths()
+			throws IOException, RefNotFoundException {
 		DirCache dc = repo.lockDirCache();
 		try (RevWalk revWalk = new RevWalk(repo);
 				TreeWalk treeWalk = new TreeWalk(revWalk.getObjectReader())) {
@@ -482,8 +474,8 @@ public class CheckoutCommand extends GitCommand<Ref> {
 		return startCommit == null && startPoint == null;
 	}
 
-	private ObjectId getStartPointObjectId() throws AmbiguousObjectException,
-			RefNotFoundException, IOException {
+	private ObjectId getStartPointObjectId()
+			throws AmbiguousObjectException, RefNotFoundException, IOException {
 		if (startCommit != null)
 			return startCommit.getId();
 
@@ -491,24 +483,24 @@ public class CheckoutCommand extends GitCommand<Ref> {
 				: Constants.HEAD;
 		ObjectId result = repo.resolve(startPointOrHead);
 		if (result == null)
-			throw new RefNotFoundException(MessageFormat.format(
-					JGitText.get().refNotResolved, startPointOrHead));
+			throw new RefNotFoundException(MessageFormat
+					.format(JGitText.get().refNotResolved, startPointOrHead));
 		return result;
 	}
 
 	private void processOptions() throws InvalidRefNameException,
 			RefAlreadyExistsException, IOException {
-		if (((!checkoutAllPaths && paths.isEmpty()) || orphan)
-				&& (name == null || !Repository
-						.isValidRefName(Constants.R_HEADS + name)))
-			throw new InvalidRefNameException(MessageFormat.format(JGitText
-					.get().branchNameInvalid, name == null ? "<null>" : name)); //$NON-NLS-1$
+		if (((!checkoutAllPaths && paths.isEmpty()) || orphan) && (name == null
+				|| !Repository.isValidRefName(Constants.R_HEADS + name)))
+			throw new InvalidRefNameException(
+					MessageFormat.format(JGitText.get().branchNameInvalid,
+							name == null ? "<null>" : name)); //$NON-NLS-1$
 
 		if (orphan) {
 			Ref refToCheck = repo.findRef(getBranchName());
 			if (refToCheck != null)
-				throw new RefAlreadyExistsException(MessageFormat.format(
-						JGitText.get().refAlreadyExists, name));
+				throw new RefAlreadyExistsException(MessageFormat
+						.format(JGitText.get().refAlreadyExists, name));
 		}
 	}
 

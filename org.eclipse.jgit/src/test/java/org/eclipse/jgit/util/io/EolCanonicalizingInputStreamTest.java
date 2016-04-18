@@ -55,9 +55,43 @@ import org.junit.Test;
 public class EolCanonicalizingInputStreamTest {
 
 	@Test
+	public void testLF() throws IOException {
+		final byte[] bytes = asBytes("1\n2\n3");
+		test(bytes, bytes, false);
+	}
+
+	@Test
+	public void testCR() throws IOException {
+		final byte[] bytes = asBytes("1\r2\r3");
+		test(bytes, bytes, false);
+	}
+
+	@Test
+	public void testCRLF() throws IOException {
+		test(asBytes("1\r\n2\r\n3"), asBytes("1\n2\n3"), false);
+	}
+
+	@Test
+	public void testLFCR() throws IOException {
+		final byte[] bytes = asBytes("1\n\r2\n\r3");
+		test(bytes, bytes, false);
+	}
+
+	@Test
 	public void testEmpty() throws IOException {
 		final byte[] bytes = asBytes("");
 		test(bytes, bytes, false);
+	}
+
+	@Test
+	public void testBinaryDetect() throws IOException {
+		final byte[] bytes = asBytes("1\r\n2\r\n3\0");
+		test(bytes, bytes, true);
+	}
+
+	@Test
+	public void testBinaryDontDetect() throws IOException {
+		test(asBytes("1\r\n2\r\n3\0"), asBytes("1\n2\n3\0"), false);
 	}
 
 	private static void test(byte[] input, byte[] expected,

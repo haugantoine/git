@@ -40,14 +40,17 @@ package org.eclipse.jgit.symlinks;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.util.List;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.junit.RepositoryTestCase;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.FileTreeIterator.FileEntry;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Before;
@@ -193,6 +196,69 @@ public class SymlinksTest extends RepositoryTestCase {
 		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"),
 				db.getFS());
 		assertEquals(FileMode.SYMLINK, entry.getMode());
+	}
+
+	/**
+	 * Steps: 1.Add file 'b' 2.Commit 3.Create branch '1' 4.Add symlink 'a'
+	 * 5.Commit 6.Checkout branch '1'
+	 *
+	 * The working tree should not contain 'a' -> FileMode.MISSING after the
+	 * checkout.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void fileModeTestMissingThenSymlink() throws Exception {
+		Git git = new Git(db);
+		writeTrashFile("b", "Hello world b");
+		git.add().addFilepattern(".").call();
+		RevCommit commit1 = git.commit().setMessage("add file b").call();
+		Ref branch_1 = git.branchCreate().setName("branch_1").call();
+		FileUtils.createSymLink(new File(db.getWorkTree(), "a"), "b");
+		git.add().addFilepattern("a").call();
+		RevCommit commit2 = git.commit().setMessage("add symlink a").call();
+
+		git.checkout().setName(branch_1.getName()).call();
+
+		TreeWalk tw = new TreeWalk(db);
+		tw.addTree(commit1.getTree());
+		tw.addTree(commit2.getTree());
+		List<DiffEntry> scan = DiffEntry.scan(tw);
+		assertEquals(1, scan.size());
+		assertEquals(FileMode.SYMLINK, scan.get(0).getNewMode());
+		assertEquals(FileMode.MISSING, scan.get(0).getOldMode());
+	}
+
+	/**
+	 * Steps: 1.Add symlink 'a' 2.Commit 3.Create branch '1' 4.Delete symlink
+	 * 'a' 5.Commit 6.Checkout branch '1'
+	 *
+	 * The working tree should contain 'a' with FileMode.SYMLINK after the
+	 * checkout.
+	 *
+	 * @throws Exception
+	 */
+	@Test
+	public void fileModeTestSymlinkThenMissing() throws Exception {
+		Git git = new Git(db);
+		writeTrashFile("b", "Hello world b");
+		FileUtils.createSymLink(new File(db.getWorkTree(), "a"), "b");
+		git.add().addFilepattern(".").call();
+		RevCommit commit1 = git.commit().setMessage("add file b & symlink a")
+				.call();
+		Ref branch_1 = git.branchCreate().setName("branch_1").call();
+		git.rm().addFilepattern("a").call();
+		RevCommit commit2 = git.commit().setMessage("delete symlink a").call();
+
+		git.checkout().setName(branch_1.getName()).call();
+
+		TreeWalk tw = new TreeWalk(db);
+		tw.addTree(commit1.getTree());
+		tw.addTree(commit2.getTree());
+		List<DiffEntry> scan = DiffEntry.scan(tw);
+		assertEquals(1, scan.size());
+		assertEquals(FileMode.MISSING, scan.get(0).getNewMode());
+		assertEquals(FileMode.SYMLINK, scan.get(0).getOldMode());
 	}
 
 	@Test

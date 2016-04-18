@@ -77,6 +77,7 @@ import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.internal.storage.pack.PackExt;
 import org.eclipse.jgit.internal.storage.pack.PackWriter;
+import org.eclipse.jgit.internal.storage.reftree.RefTreeNames;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
@@ -545,6 +546,8 @@ public class GC {
 				continue;
 			if (ref.getName().startsWith(Constants.R_HEADS))
 				allHeads.add(ref.getObjectId());
+			else if (RefTreeNames.isRefTree(refdb, ref.getName()))
+				txnHeads.add(ref.getObjectId());
 			else
 				nonHeads.add(ref.getObjectId());
 			if (ref.getPeeledObjectId() != null)
@@ -632,7 +635,15 @@ public class GC {
 	 * @throws IOException
 	 */
 	private Collection<Ref> getAllRefs() throws IOException {
-		return repo.getRefDatabase().getAdditionalRefs();
+		Collection<Ref> refs = RefTreeNames.allRefs(repo.getRefDatabase());
+		List<Ref> addl = repo.getRefDatabase().getAdditionalRefs();
+		if (!addl.isEmpty()) {
+			List<Ref> all = new ArrayList<>(refs.size() + addl.size());
+			all.addAll(refs);
+			all.addAll(addl);
+			return all;
+		}
+		return refs;
 	}
 
 	/**

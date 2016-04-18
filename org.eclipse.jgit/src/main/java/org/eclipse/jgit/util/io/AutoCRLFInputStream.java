@@ -47,6 +47,8 @@ package org.eclipse.jgit.util.io;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.eclipse.jgit.diff.RawText;
+
 /**
  * An OutputStream that expands LF to CRLF.
  *
@@ -143,6 +145,7 @@ public class AutoCRLFInputStream extends InputStream {
 		if (cnt < 1)
 			return false;
 		if (detectBinary) {
+			isBinary = RawText.isBinary(buf, cnt);
 			detectBinary = false;
 		}
 		ptr = 0;

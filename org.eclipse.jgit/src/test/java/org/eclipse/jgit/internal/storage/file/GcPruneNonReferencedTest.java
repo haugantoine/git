@@ -99,4 +99,22 @@ public class GcPruneNonReferencedTest extends GcTestCase {
 		assertTrue(repo.hasObject(b));
 	}
 
+	@Test
+	public void testPackCommitsAndLooseOneWithPruneNow() throws Exception {
+		BranchBuilder bb = tr.branch("refs/heads/master");
+		RevCommit first = bb.commit().add("A", "A").add("B", "B").create();
+		bb.commit().add("A", "A2").add("B", "B2").create();
+		tr.update("refs/heads/master", first);
+
+		stats = gc.getStatistics();
+		assertEquals(8, stats.numberOfLooseObjects);
+		assertEquals(0, stats.numberOfPackedObjects);
+		gc.setExpireAgeMillis(0);
+		fsTick();
+		gc.gc();
+		stats = gc.getStatistics();
+		assertEquals(0, stats.numberOfLooseObjects);
+		assertEquals(8, stats.numberOfPackedObjects);
+		assertEquals(2, stats.numberOfPackFiles);
+	}
 }

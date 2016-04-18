@@ -51,6 +51,8 @@ import java.util.Properties;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.dfs.DfsGarbageCollector;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.internal.storage.file.GC;
 import org.eclipse.jgit.internal.storage.file.GC.RepoStatistics;
@@ -174,6 +176,12 @@ public class GarbageCollectCommand extends GitCommand<Properties> {
 				} catch (ParseException e) {
 					throw new JGitInternalException(JGitText.get().gcFailed, e);
 				}
+			} else if (repo instanceof DfsRepository) {
+				DfsGarbageCollector gc =
+					new DfsGarbageCollector((DfsRepository) repo);
+				gc.setPackConfig(pconfig);
+				gc.pack(monitor);
+				return new Properties();
 			} else {
 				throw new UnsupportedOperationException(MessageFormat.format(
 						JGitText.get().unsupportedGC,

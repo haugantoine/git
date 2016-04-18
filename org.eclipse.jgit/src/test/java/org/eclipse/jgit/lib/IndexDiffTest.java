@@ -56,8 +56,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.TreeSet;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.MergeResult.MergeStatus;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.dircache.DirCache;
 import org.eclipse.jgit.dircache.DirCacheBuilder;
@@ -67,6 +70,7 @@ import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.junit.RepositoryTestCase;
 import org.eclipse.jgit.lib.CoreConfig.AutoCRLF;
 import org.eclipse.jgit.lib.IndexDiff.StageState;
+import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.treewalk.FileTreeIterator;
@@ -169,6 +173,129 @@ public class IndexDiffTest extends RepositoryTestCase {
 		assertEquals(0, diff.getAdded().size());
 		assertEquals(0, diff.getRemoved().size());
 		assertEquals(0, diff.getMissing().size());
+		assertEquals(Collections.EMPTY_SET, diff.getUntrackedFolders());
+	}
+
+	@Test
+	public void testConflicting() throws Exception {
+		Git git = new Git(db);
+
+		writeTrashFile("a", "1\na\n3\n");
+		writeTrashFile("b", "1\nb\n3\n");
+		git.add().addFilepattern("a").addFilepattern("b").call();
+		RevCommit initialCommit = git.commit().setMessage("initial").call();
+
+		// create side branch with two modifications
+		createBranch(initialCommit, "refs/heads/side");
+		checkoutBranch("refs/heads/side");
+		writeTrashFile("a", "1\na(side)\n3\n");
+		writeTrashFile("b", "1\nb\n3\n(side)");
+		git.add().addFilepattern("a").addFilepattern("b").call();
+		RevCommit secondCommit = git.commit().setMessage("side").call();
+
+		// update a on master to generate conflict
+		checkoutBranch("refs/heads/master");
+		writeTrashFile("a", "1\na(main)\n3\n");
+		git.add().addFilepattern("a").call();
+		git.commit().setMessage("main").call();
+
+		// merge side with master
+		MergeResult result = git.merge().include(secondCommit.getId())
+				.setStrategy(MergeStrategy.RESOLVE).call();
+		assertEquals(MergeStatus.CONFLICTING, result.getMergeStatus());
+
+		FileTreeIterator iterator = new FileTreeIterator(db);
+		IndexDiff diff = new IndexDiff(db, Constants.HEAD, iterator);
+		diff.diff();
+
+		assertEquals("[b]",
+				new TreeSet<String>(diff.getChanged()).toString());
+		assertEquals("[]", diff.getAdded().toString());
+		assertEquals("[]", diff.getRemoved().toString());
+		assertEquals("[]", diff.getMissing().toString());
+		assertEquals("[]", diff.getModified().toString());
+		assertEquals("[a]", diff.getConflicting().toString());
+		assertEquals(StageState.BOTH_MODIFIED,
+				diff.getConflictingStageStates().get("a"));
+		assertEquals(Collections.EMPTY_SET, diff.getUntrackedFolders());
+	}
+
+	@Test
+	public void testConflictingDeletedAndModified() throws Exception {
+		Git git = new Git(db);
+
+		writeTrashFile("a", "1\na\n3\n");
+		writeTrashFile("b", "1\nb\n3\n");
+		git.add().addFilepattern("a").addFilepattern("b").call();
+		RevCommit initialCommit = git.commit().setMessage("initial").call();
+
+		// create side branch and delete "a"
+		createBranch(initialCommit, "refs/heads/side");
+		checkoutBranch("refs/heads/side");
+		git.rm().addFilepattern("a").call();
+		RevCommit secondCommit = git.commit().setMessage("side").call();
+
+		// update a on master to generate conflict
+		checkoutBranch("refs/heads/master");
+		writeTrashFile("a", "1\na(main)\n3\n");
+		git.add().addFilepattern("a").call();
+		git.commit().setMessage("main").call();
+
+		// merge side with master
+		MergeResult result = git.merge().include(secondCommit.getId())
+				.setStrategy(MergeStrategy.RESOLVE).call();
+		assertEquals(MergeStatus.CONFLICTING, result.getMergeStatus());
+
+		FileTreeIterator iterator = new FileTreeIterator(db);
+		IndexDiff diff = new IndexDiff(db, Constants.HEAD, iterator);
+		diff.diff();
+
+		assertEquals("[]", new TreeSet<String>(diff.getChanged()).toString());
+		assertEquals("[]", diff.getAdded().toString());
+		assertEquals("[]", diff.getRemoved().toString());
+		assertEquals("[]", diff.getMissing().toString());
+		assertEquals("[]", diff.getModified().toString());
+		assertEquals("[a]", diff.getConflicting().toString());
+		assertEquals(StageState.DELETED_BY_THEM,
+				diff.getConflictingStageStates().get("a"));
+		assertEquals(Collections.EMPTY_SET, diff.getUntrackedFolders());
+	}
+
+	@Test
+	public void testConflictingFromMultipleCreations() throws Exception {
+		Git git = new Git(db);
+
+		writeTrashFile("a", "1\na\n3\n");
+		git.add().addFilepattern("a").call();
+		RevCommit initialCommit = git.commit().setMessage("initial").call();
+
+		createBranch(initialCommit, "refs/heads/side");
+		checkoutBranch("refs/heads/side");
+
+		writeTrashFile("b", "1\nb(side)\n3\n");
+		git.add().addFilepattern("b").call();
+		RevCommit secondCommit = git.commit().setMessage("side").call();
+
+		checkoutBranch("refs/heads/master");
+
+		writeTrashFile("b", "1\nb(main)\n3\n");
+		git.add().addFilepattern("b").call();
+		git.commit().setMessage("main").call();
+
+		MergeResult result = git.merge().include(secondCommit.getId())
+				.setStrategy(MergeStrategy.RESOLVE).call();
+		assertEquals(MergeStatus.CONFLICTING, result.getMergeStatus());
+
+		FileTreeIterator iterator = new FileTreeIterator(db);
+		IndexDiff diff = new IndexDiff(db, Constants.HEAD, iterator);
+		diff.diff();
+
+		assertEquals("[]", new TreeSet<String>(diff.getChanged()).toString());
+		assertEquals("[]", diff.getAdded().toString());
+		assertEquals("[]", diff.getRemoved().toString());
+		assertEquals("[]", diff.getMissing().toString());
+		assertEquals("[]", diff.getModified().toString());
+		assertEquals("[b]", diff.getConflicting().toString());
 		assertEquals(Collections.EMPTY_SET, diff.getUntrackedFolders());
 	}
 
@@ -445,6 +572,69 @@ public class IndexDiffTest extends RepositoryTestCase {
 		assertFalse(StageState.BOTH_ADDED.hasBase());
 		assertTrue(StageState.BOTH_ADDED.hasOurs());
 		assertTrue(StageState.BOTH_ADDED.hasTheirs());
+	}
+
+	@Test
+	public void testStageState_mergeAndReset_bug() throws Exception {
+		Git git = new Git(db);
+
+		writeTrashFile("a", "content");
+		git.add().addFilepattern("a").call();
+		RevCommit initialCommit = git.commit().setMessage("initial commit")
+				.call();
+
+		// create branch and add a new file
+		final String branchName = Constants.R_HEADS + "branch";
+		createBranch(initialCommit, branchName);
+		checkoutBranch(branchName);
+		writeTrashFile("b", "second file content - branch");
+		git.add().addFilepattern("b").call();
+		RevCommit branchCommit = git.commit().setMessage("branch commit")
+				.call();
+
+		// checkout master and add the same new file
+		checkoutBranch(Constants.R_HEADS + Constants.MASTER);
+		writeTrashFile("b", "second file content - master");
+		git.add().addFilepattern("b").call();
+		git.commit().setMessage("master commit").call();
+
+		// try and merge
+		MergeResult result = git.merge().include(branchCommit).call();
+		assertEquals(MergeStatus.CONFLICTING, result.getMergeStatus());
+
+		FileTreeIterator iterator = new FileTreeIterator(db);
+		IndexDiff diff = new IndexDiff(db, Constants.HEAD, iterator);
+		diff.diff();
+
+		assertTrue(diff.getChanged().isEmpty());
+		assertTrue(diff.getAdded().isEmpty());
+		assertTrue(diff.getRemoved().isEmpty());
+		assertTrue(diff.getMissing().isEmpty());
+		assertTrue(diff.getModified().isEmpty());
+		assertEquals(1, diff.getConflicting().size());
+		assertTrue(diff.getConflicting().contains("b"));
+		assertEquals(StageState.BOTH_ADDED, diff.getConflictingStageStates()
+				.get("b"));
+		assertTrue(diff.getUntrackedFolders().isEmpty());
+
+		// reset file b to its master state without altering the index
+		writeTrashFile("b", "second file content - master");
+
+		// we should have the same result
+		iterator = new FileTreeIterator(db);
+		diff = new IndexDiff(db, Constants.HEAD, iterator);
+		diff.diff();
+
+		assertTrue(diff.getChanged().isEmpty());
+		assertTrue(diff.getAdded().isEmpty());
+		assertTrue(diff.getRemoved().isEmpty());
+		assertTrue(diff.getMissing().isEmpty());
+		assertTrue(diff.getModified().isEmpty());
+		assertEquals(1, diff.getConflicting().size());
+		assertTrue(diff.getConflicting().contains("b"));
+		assertEquals(StageState.BOTH_ADDED, diff.getConflictingStageStates()
+				.get("b"));
+		assertTrue(diff.getUntrackedFolders().isEmpty());
 	}
 
 	@Test

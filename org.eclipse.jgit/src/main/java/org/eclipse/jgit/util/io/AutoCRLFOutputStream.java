@@ -46,6 +46,8 @@ package org.eclipse.jgit.util.io;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import org.eclipse.jgit.diff.RawText;
+
 /**
  * An OutputStream that expands LF to CRLF.
  * <p>
@@ -139,6 +141,7 @@ public class AutoCRLFOutputStream extends OutputStream {
 	}
 
 	private void decideMode() throws IOException {
+		isBinary = RawText.isBinary(binbuf, binbufcnt);
 		int cachedLen = binbufcnt;
 		binbufcnt = binbuf.length + 1; // full!
 		write(binbuf, 0, cachedLen);

@@ -65,6 +65,7 @@ import java.util.Comparator;
 import org.eclipse.jgit.api.errors.FilterFailedException;
 import org.eclipse.jgit.attributes.AttributesNode;
 import org.eclipse.jgit.attributes.AttributesRule;
+import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.CorruptObjectException;
@@ -361,9 +362,21 @@ public abstract class WorkingTreeIterator extends AbstractTreeIterator {
 			return is;
 		}
 
+		if (len <= MAXIMUM_FILE_SIZE_TO_READ_FULLY) {
+			ByteBuffer rawbuf = IO.readWholeStream(is, (int) len);
+			byte[] raw = rawbuf.array();
+			int n = rawbuf.limit();
+			if (!isBinary(raw, n)) {
+				rawbuf = filterClean(raw, n);
+				raw = rawbuf.array();
+				n = rawbuf.limit();
+			}
+			canonLen = n;
+			return new ByteArrayInputStream(raw, 0, n);
+		}
 
 		// TODO: fix autocrlf causing mightneedcleaning
-		if (!mightNeedCleaning) {
+		if (!mightNeedCleaning && isBinary(e)) {
 			canonLen = len;
 			return is;
 		}
@@ -395,6 +408,19 @@ public abstract class WorkingTreeIterator extends AbstractTreeIterator {
 		case TRUE:
 		case INPUT:
 			return true;
+		}
+	}
+
+	private static boolean isBinary(byte[] content, int sz) {
+		return RawText.isBinary(content, sz);
+	}
+
+	private static boolean isBinary(Entry entry) throws IOException {
+		InputStream in = entry.openInputStream();
+		try {
+			return RawText.isBinary(in);
+		} finally {
+			safeClose(in);
 		}
 	}
 

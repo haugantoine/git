@@ -1041,6 +1041,105 @@ public class WalkEncryptionTest {
 			reportAlgorithmStatus(props);
 			assumeTrue(isTestConfigPresent());
 			assumeTrue(isAlgorithmTestable(props));
+			cryptoTest(props);
+		}
+
+		/**
+		 * Required encrypted amazon remote JGIT life cycle test.
+		 *
+		 * @param props
+		 * @throws Exception
+		 */
+		void cryptoTest(Properties props) throws Exception {
+
+			remoteDelete();
+			configCreate(props);
+			folderDelete(JGIT_LOCAL_DIR);
+
+			String uri = amazonURI();
+
+			// Local repositories.
+			File dirOne = db.getWorkTree(); // Provided by setup.
+			File dirTwo = new File(JGIT_LOCAL_DIR);
+
+			// Local verification files.
+			String nameStatic = "master.txt"; // Provided by setup.
+			String nameDynamic = JGIT_USER + "-" + UUID.randomUUID().toString();
+
+			String remote = "remote";
+			RefSpec specs = new RefSpec("refs/heads/master:refs/heads/master");
+
+			{ // Push into remote from local one.
+
+				StoredConfig config = db.getConfig();
+				RemoteConfig remoteConfig = new RemoteConfig(config, remote);
+				remoteConfig.addURI(new URIish(uri));
+				remoteConfig.update(config);
+				config.save();
+
+				Git git = Git.open(dirOne);
+				git.checkout().setName("master").call();
+				git.push().setRemote(remote).setRefSpecs(specs).call();
+				git.close();
+
+				File fileStatic = new File(dirOne, nameStatic);
+				assertTrue("Provided by setup", fileStatic.exists());
+
+			}
+
+			{ // Clone from remote into local two.
+
+				File fileStatic = new File(dirTwo, nameStatic);
+				assertFalse("Not Provided by setup", fileStatic.exists());
+
+				Git git = Git.cloneRepository().setURI(uri).setDirectory(dirTwo)
+						.call();
+				git.close();
+
+				assertTrue("Provided by clone", fileStatic.exists());
+			}
+
+			{ // Verify static file content.
+				File fileOne = new File(dirOne, nameStatic);
+				File fileTwo = new File(dirTwo, nameStatic);
+				verifyFileContent(fileOne, fileTwo);
+			}
+
+			{ // Verify new file commit and push from local one.
+
+				File fileDynamic = new File(dirOne, nameDynamic);
+				assertFalse("Not Provided by setup", fileDynamic.exists());
+				FileUtils.createNewFile(fileDynamic);
+				textWrite(fileDynamic, nameDynamic);
+				assertTrue("Provided by create", fileDynamic.exists());
+				assertTrue("Need content to encrypt", fileDynamic.length() > 0);
+
+				Git git = Git.open(dirOne);
+				git.add().addFilepattern(nameDynamic).call();
+				git.commit().setMessage(nameDynamic).call();
+				git.push().setRemote(remote).setRefSpecs(specs).call();
+				git.close();
+
+			}
+
+			{ // Verify new file pull from remote into local two.
+
+				File fileDynamic = new File(dirTwo, nameDynamic);
+				assertFalse("Not Provided by setup", fileDynamic.exists());
+
+				Git git = Git.open(dirTwo);
+				git.pull().call();
+				git.close();
+
+				assertTrue("Provided by pull", fileDynamic.exists());
+			}
+
+			{ // Verify dynamic file content.
+				File fileOne = new File(dirOne, nameDynamic);
+				File fileTwo = new File(dirTwo, nameDynamic);
+				verifyFileContent(fileOne, fileTwo);
+			}
+
 		}
 
 	}
@@ -1064,6 +1163,7 @@ public class WalkEncryptionTest {
 			Properties props = new Properties();
 			props.put(AmazonS3.Keys.CRYPTO_ALG, ALGO_ERROR);
 			props.put(AmazonS3.Keys.PASSWORD, JGIT_PASS);
+			cryptoTest(props);
 		}
 
 	}

@@ -42,16 +42,22 @@
  */
 package org.eclipse.jgit.revplot;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
+import org.eclipse.jgit.api.MergeResult;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.junit.RepositoryTestCase;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.junit.Before;
+import org.junit.Test;
 
 public class AbstractPlotRendererTest extends RepositoryTestCase {
 
@@ -66,6 +72,26 @@ public class AbstractPlotRendererTest extends RepositoryTestCase {
 		plotRenderer = new TestPlotRenderer();
 	}
 
+	@Test
+	public void testDrawTextAlignment() throws Exception {
+		git.commit().setMessage("initial commit").call();
+		git.branchCreate().setName("topic").call();
+		git.checkout().setName("topic").call();
+		git.commit().setMessage("commit 1 on topic").call();
+		git.commit().setMessage("commit 2 on topic").call();
+		git.checkout().setName("master").call();
+		git.commit().setMessage("commit on master").call();
+		MergeResult mergeCall = merge(db.resolve("topic"));
+		ObjectId start = mergeCall.getNewHead();
+		PlotCommitList<PlotLane> commitList = createCommitList(start);
+
+		for (int i = 0; i < commitList.size(); i++)
+			plotRenderer.paintCommit(commitList.get(i), 30);
+
+		List<Integer> indentations = plotRenderer.indentations;
+		assertEquals(indentations.get(2), indentations.get(3));
+	}
+
 	private PlotCommitList<PlotLane> createCommitList(ObjectId start)
 			throws IOException {
 		TestPlotWalk walk = new TestPlotWalk(db);
@@ -74,6 +100,11 @@ public class AbstractPlotRendererTest extends RepositoryTestCase {
 		commitList.source(walk);
 		commitList.fillTo(1000);
 		return commitList;
+	}
+
+	private MergeResult merge(ObjectId includeId) throws GitAPIException {
+		return git.merge().setFastForward(FastForwardMode.NO_FF)
+				.include(includeId).call();
 	}
 
 	private static class TestPlotWalk extends PlotWalk {

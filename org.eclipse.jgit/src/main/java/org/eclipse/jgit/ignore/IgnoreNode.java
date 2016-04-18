@@ -40,7 +40,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package org.eclipse.jgit.attributes;
+package org.eclipse.jgit.ignore;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,24 +49,41 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 
 import org.eclipse.jgit.lib.Constants;
 
 /**
- * Represents a bundle of attributes inherited from a base directory.
+ * Represents a bundle of ignore rules inherited from a base directory.
  *
  * This class is not thread safe, it maintains state about the last match.
- *
- * @since 3.7
  */
-public class AttributesNode {
+public class IgnoreNode {
+	/** Result from {@link IgnoreNode#isIgnored(String, boolean)}. */
+	public static enum MatchResult {
+		/** The file is not ignored, due to a rule saying its not ignored. */
+		NOT_IGNORED,
+
+		/** The file is ignored due to a rule in this node. */
+		IGNORED,
+
+		/** The ignore status is unknown, check inherited rules. */
+		CHECK_PARENT,
+
+		/**
+		 * The first previous (parent) ignore rule match (if any) should be
+		 * negated, and then inherited rules applied.
+		 *
+		 * @since 3.6
+		 */
+		CHECK_PARENT_NEGATE_FIRST_MATCH;
+	}
+
 	/** The rules that have been parsed into this node. */
-	private final List<AttributesRule> rules;
+	private final List<FastIgnoreRule> rules;
 
 	/** Create an empty ignore node with no rules. */
-	public AttributesNode() {
-		rules = new ArrayList<AttributesRule>();
+	public IgnoreNode() {
+		rules = new ArrayList<FastIgnoreRule>();
 	}
 
 	/**
@@ -75,12 +92,12 @@ public class AttributesNode {
 	 * @param rules
 	 *            list of rules.
 	 **/
-	public AttributesNode(List<AttributesRule> rules) {
+	public IgnoreNode(List<FastIgnoreRule> rules) {
 		this.rules = rules;
 	}
 
 	/**
-	 * Parse files according to gitattribute standards.
+	 * Parse files according to gitignore standards.
 	 *
 	 * @param in
 	 *            input stream holding the standard ignore format. The caller is
@@ -92,23 +109,11 @@ public class AttributesNode {
 		BufferedReader br = asReader(in);
 		String txt;
 		while ((txt = br.readLine()) != null) {
-			txt = txt.trim();
-			if (txt.length() > 0 && !txt.startsWith("#") /* Comments *///$NON-NLS-1$
-					&& !txt.startsWith("!") /* Negative pattern forbidden for attributes */) { //$NON-NLS-1$
-				int patternEndSpace = txt.indexOf(' ');
-				int patternEndTab = txt.indexOf('\t');
-
-				final int patternEnd;
-				if (patternEndSpace == -1)
-					patternEnd = patternEndTab;
-				else if (patternEndTab == -1)
-					patternEnd = patternEndSpace;
-				else
-					patternEnd = Math.min(patternEndSpace, patternEndTab);
-
-				if (patternEnd > -1)
-					rules.add(new AttributesRule(txt.substring(0, patternEnd),
-							txt.substring(patternEnd + 1).trim()));
+			if (txt.length() > 0 && !txt.startsWith("#") && !txt.equals("/")) { //$NON-NLS-1$ //$NON-NLS-2$
+				FastIgnoreRule rule = new FastIgnoreRule(txt);
+				if (!rule.isEmpty()) {
+					rules.add(rule);
+				}
 			}
 		}
 	}
@@ -118,44 +123,79 @@ public class AttributesNode {
 	}
 
 	/** @return list of all ignore rules held by this node. */
-	public List<AttributesRule> getRules() {
+	public List<FastIgnoreRule> getRules() {
 		return Collections.unmodifiableList(rules);
 	}
 
 	/**
-	 * Returns the matching attributes for an entry path.
+	 * Determine if an entry path matches an ignore rule.
 	 *
 	 * @param entryPath
-	 *            the path to test. The path must be relative to this attribute
+	 *            the path to test. The path must be relative to this ignore
 	 *            node's own repository path, and in repository path format
 	 *            (uses '/' and not '\').
 	 * @param isDirectory
 	 *            true if the target item is a directory.
-	 * @param attributes
-	 *            Map that will hold the attributes matching this entry path. If
-	 *            it is not empty, this method will NOT override any existing
-	 *            entry.
-	 * @since 4.2
+	 * @return status of the path.
 	 */
-	public void getAttributes(String entryPath,
-			boolean isDirectory, Attributes attributes) {
-		// Parse rules in the reverse order that they were read since the last
-		// entry should be used
-		ListIterator<AttributesRule> ruleIterator = rules.listIterator(rules
-				.size());
-		while (ruleIterator.hasPrevious()) {
-			AttributesRule rule = ruleIterator.previous();
+	public MatchResult isIgnored(String entryPath, boolean isDirectory) {
+		return isIgnored(entryPath, isDirectory, false);
+	}
+
+	/**
+	 * Determine if an entry path matches an ignore rule.
+	 *
+	 * @param entryPath
+	 *            the path to test. The path must be relative to this ignore
+	 *            node's own repository path, and in repository path format
+	 *            (uses '/' and not '\').
+	 * @param isDirectory
+	 *            true if the target item is a directory.
+	 * @param negateFirstMatch
+	 *            true if the first match should be negated
+	 * @return status of the path.
+	 * @since 3.6
+	 */
+	public MatchResult isIgnored(String entryPath, boolean isDirectory,
+			boolean negateFirstMatch) {
+		if (rules.isEmpty())
+			if (negateFirstMatch)
+				return MatchResult.CHECK_PARENT_NEGATE_FIRST_MATCH;
+			else
+				return MatchResult.CHECK_PARENT;
+
+		// Parse rules in the reverse order that they were read
+		for (int i = rules.size() - 1; i > -1; i--) {
+			FastIgnoreRule rule = rules.get(i);
 			if (rule.isMatch(entryPath, isDirectory)) {
-				ListIterator<Attribute> attributeIte = rule.getAttributes()
-						.listIterator(rule.getAttributes().size());
-				// Parses the attributes in the reverse order that they were
-				// read since the last entry should be used
-				while (attributeIte.hasPrevious()) {
-					Attribute attr = attributeIte.previous();
-					if (!attributes.containsKey(attr.getKey()))
-						attributes.put(attr);
+				if (rule.getResult()) {
+					// rule matches: path could be ignored
+					if (negateFirstMatch)
+						// ignore current match, reset "negate" flag, continue
+						negateFirstMatch = false;
+					else
+						// valid match, just return
+						return MatchResult.IGNORED;
+				} else {
+					// found negated rule
+					if (negateFirstMatch)
+						// not possible to re-include excluded ignore rule
+						return MatchResult.NOT_IGNORED;
+					else
+						// set the flag and continue
+						negateFirstMatch = true;
 				}
 			}
 		}
+		if (negateFirstMatch)
+			// negated rule found but there is no previous rule in *this* file
+			return MatchResult.CHECK_PARENT_NEGATE_FIRST_MATCH;
+		// *this* file has no matching rules
+		return MatchResult.CHECK_PARENT;
+	}
+
+	@Override
+	public String toString() {
+		return rules.toString();
 	}
 }

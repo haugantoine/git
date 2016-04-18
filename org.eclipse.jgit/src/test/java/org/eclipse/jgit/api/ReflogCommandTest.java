@@ -76,6 +76,7 @@ public class ReflogCommandTest extends RepositoryTestCase {
 		git.checkout().setCreateBranch(true).setName("b1").call();
 		git.rm().addFilepattern(FILE).call();
 		commit2 = git.commit().setMessage("Removed file").call();
+		git.notesAdd().setObjectId(commit1).setMessage("data").call();
 	}
 
 	/**

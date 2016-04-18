@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jgit.errors.InvalidPatternException;
+import org.eclipse.jgit.fnmatch.FileNameMatcher;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.StringUtils;
@@ -135,6 +136,8 @@ public class OpenSshConfig {
 
 		for (final Map.Entry<String, Host> e : cache.entrySet()) {
 			if (!isHostPattern(e.getKey()))
+				continue;
+			if (!isHostMatch(e.getKey(), hostName))
 				continue;
 			h.copyFrom(e.getValue());
 		}
@@ -263,6 +266,17 @@ public class OpenSshConfig {
 
 	private static boolean isHostPattern(final String s) {
 		return s.indexOf('*') >= 0 || s.indexOf('?') >= 0;
+	}
+
+	private static boolean isHostMatch(final String pattern, final String name) {
+		final FileNameMatcher fn;
+		try {
+			fn = new FileNameMatcher(pattern, null);
+		} catch (InvalidPatternException e) {
+			return false;
+		}
+		fn.append(name);
+		return fn.isMatch();
 	}
 
 	private static String dequote(final String value) {

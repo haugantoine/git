@@ -1248,6 +1248,10 @@ public class DirCacheCheckoutTest extends RepositoryTestCase {
 		git.add().addFilepattern(".gitignore").call();
 		git.commit().setMessage("delete and ignore file").call();
 
+		writeTrashFile(fname, "Something different");
+		git.checkout().setName("master").call();
+		assertWorkDir(mkmap(fname, "b"));
+		assertTrue(git.status().call().isClean());
 	}
 
 	@Test

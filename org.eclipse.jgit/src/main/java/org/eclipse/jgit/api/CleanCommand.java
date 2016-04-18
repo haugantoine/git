@@ -59,8 +59,7 @@ import org.eclipse.jgit.util.FileUtils;
 /**
  * Remove untracked files from the working tree
  *
- * @see <a
- *      href="http://www.kernel.org/pub/software/scm/git/docs/git-clean.html"
+ * @see <a href="http://www.kernel.org/pub/software/scm/git/docs/git-clean.html"
  *      >Git documentation about Clean</a>
  */
 public class CleanCommand extends GitCommand<Set<String>> {
@@ -116,8 +115,8 @@ public class CleanCommand extends GitCommand<Set<String>> {
 			Set<String> notIgnoredFiles = filterIgnorePaths(filtered,
 					status.getIgnoredNotInIndex(), true);
 			Set<String> notIgnoredDirs = filterIgnorePaths(
-					untrackedAndIgnoredDirs,
-					status.getIgnoredNotInIndex(), false);
+					untrackedAndIgnoredDirs, status.getIgnoredNotInIndex(),
+					false);
 
 			for (String file : notIgnoredFiles)
 				if (paths.isEmpty() || paths.contains(file)) {
@@ -142,19 +141,19 @@ public class CleanCommand extends GitCommand<Set<String>> {
 
 	private Set<String> filterIgnorePaths(Set<String> inputPaths,
 			Set<String> ignoredNotInIndex, boolean exact) {
-		if (ignore) {
-			Set<String> filtered = new TreeSet<String>(inputPaths);
-			for (String path : inputPaths)
-				for (String ignored : ignoredNotInIndex)
-					if ((exact && path.equals(ignored))
-							|| (!exact && path.startsWith(ignored))) {
-						filtered.remove(path);
-						break;
-					}
-
-			return filtered;
+		if (!ignore) {
+			return inputPaths;
 		}
-		return inputPaths;
+		Set<String> filtered = new TreeSet<String>(inputPaths);
+		for (String path : inputPaths)
+			for (String ignored : ignoredNotInIndex)
+				if ((exact && path.equals(ignored))
+						|| (!exact && path.startsWith(ignored))) {
+					filtered.remove(path);
+					break;
+				}
+
+		return filtered;
 	}
 
 	private Set<String> filterFolders(Set<String> untracked,
@@ -166,7 +165,6 @@ public class CleanCommand extends GitCommand<Set<String>> {
 					filtered.remove(file);
 					break;
 				}
-
 
 		return filtered;
 	}

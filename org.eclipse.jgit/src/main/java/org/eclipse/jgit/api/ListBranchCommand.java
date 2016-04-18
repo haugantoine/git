@@ -112,12 +112,10 @@ public class ListBranchCommand extends GitCommand<List<Ref>> {
 			if (head != null && head.getLeaf().getName().equals(Constants.HEAD))
 				refs.add(head);
 
-			if (listMode == null) {
+			if (listMode != ListMode.REMOTE) {
 				refs.addAll(getRefs(Constants.R_HEADS));
-			} else if (listMode == ListMode.REMOTE) {
-				refs.addAll(getRefs(Constants.R_REMOTES));
-			} else {
-				refs.addAll(getRefs(Constants.R_HEADS));
+			}
+			if (listMode != null) {
 				refs.addAll(getRefs(Constants.R_REMOTES));
 			}
 			resultRefs = new ArrayList<Ref>(filterRefs(refs));

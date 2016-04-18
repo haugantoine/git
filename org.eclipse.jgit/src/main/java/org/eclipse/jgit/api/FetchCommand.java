@@ -128,14 +128,15 @@ public class FetchCommand extends TransportCommand<FetchCommand, FetchResult> {
 			FetchResult result = transport.fetch(monitor, refSpecs);
 			return result;
 		} catch (NoRemoteRepositoryException e) {
-			throw new InvalidRemoteException(MessageFormat.format(
-					JGitText.get().invalidRemote, remote), e);
+			throw new InvalidRemoteException(
+					MessageFormat.format(JGitText.get().invalidRemote, remote),
+					e);
 		} catch (TransportException e) {
 			throw new org.eclipse.jgit.api.errors.TransportException(
 					e.getMessage(), e);
 		} catch (URISyntaxException e) {
-			throw new InvalidRemoteException(MessageFormat.format(
-					JGitText.get().invalidRemote, remote));
+			throw new InvalidRemoteException(
+					MessageFormat.format(JGitText.get().invalidRemote, remote));
 		} catch (NotSupportedException e) {
 			throw new JGitInternalException(
 					JGitText.get().exceptionCaughtDuringExecutionOfFetchCommand,
@@ -198,15 +199,14 @@ public class FetchCommand extends TransportCommand<FetchCommand, FetchResult> {
 	public boolean isRemoveDeletedRefs() {
 		if (removeDeletedRefs != null)
 			return removeDeletedRefs.booleanValue();
-		else { // fall back to configuration
-			boolean result = false;
-			StoredConfig config = repo.getConfig();
-			result = config.getBoolean(ConfigConstants.CONFIG_FETCH_SECTION,
-					null, ConfigConstants.CONFIG_KEY_PRUNE, result);
-			result = config.getBoolean(ConfigConstants.CONFIG_REMOTE_SECTION,
-					remote, ConfigConstants.CONFIG_KEY_PRUNE, result);
-			return result;
-		}
+		// fall back to configuration
+		boolean result = false;
+		StoredConfig config = repo.getConfig();
+		result = config.getBoolean(ConfigConstants.CONFIG_FETCH_SECTION, null,
+				ConfigConstants.CONFIG_KEY_PRUNE, result);
+		result = config.getBoolean(ConfigConstants.CONFIG_REMOTE_SECTION,
+				remote, ConfigConstants.CONFIG_KEY_PRUNE, result);
+		return result;
 	}
 
 	/**

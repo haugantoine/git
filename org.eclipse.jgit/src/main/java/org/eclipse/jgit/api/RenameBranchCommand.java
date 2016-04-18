@@ -110,7 +110,15 @@ public class RenameBranchCommand extends GitCommand<Ref> {
 			if (repo.findRef(newName) != null)
 				throw new RefAlreadyExistsException(MessageFormat.format(
 						JGitText.get().refAlreadyExists1, newName));
-			if (oldName != null) {
+			if (oldName == null) {
+				fullOldName = repo.getFullBranch();
+				if (fullOldName == null) {
+					throw new NoHeadException(
+							JGitText.get().invalidRepositoryStateNoHead);
+				}
+				if (ObjectId.isId(fullOldName))
+					throw new DetachedHeadException();
+			} else {
 				Ref ref = repo.findRef(oldName);
 				if (ref == null)
 					throw new RefNotFoundException(MessageFormat.format(
@@ -120,14 +128,6 @@ public class RenameBranchCommand extends GitCommand<Ref> {
 							JGitText.get().renameBranchFailedBecauseTag,
 							oldName));
 				fullOldName = ref.getName();
-			} else {
-				fullOldName = repo.getFullBranch();
-				if (fullOldName == null) {
-					throw new NoHeadException(
-							JGitText.get().invalidRepositoryStateNoHead);
-				}
-				if (ObjectId.isId(fullOldName))
-					throw new DetachedHeadException();
 			}
 
 			if (fullOldName.startsWith(Constants.R_REMOTES))

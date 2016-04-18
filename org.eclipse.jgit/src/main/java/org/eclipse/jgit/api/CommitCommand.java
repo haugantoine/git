@@ -258,19 +258,17 @@ public class CommitCommand extends GitCommand<RevCommit> {
 				RevCommit revCommit = rw.parseCommit(commitId);
 				RefUpdate ru = repo.updateRef(Constants.HEAD);
 				ru.setNewObjectId(commitId);
-				if (reflogComment != null) {
-					ru.setRefLogMessage(reflogComment, false);
-				} else {
+				if (reflogComment == null) {
 					String prefix = amend ? "commit (amend): " //$NON-NLS-1$
 							: parents.size() == 0 ? "commit (initial): " //$NON-NLS-1$
 									: "commit: "; //$NON-NLS-1$
-					ru.setRefLogMessage(prefix + revCommit.getShortMessage(),
-							false);
+					reflogComment = prefix + revCommit.getShortMessage();
 				}
-				if (headId != null)
-					ru.setExpectedOldObjectId(headId);
-				else
+				ru.setRefLogMessage(reflogComment, false);
+				if (headId == null)
 					ru.setExpectedOldObjectId(ObjectId.zeroId());
+				else
+					ru.setExpectedOldObjectId(headId);
 				Result rc = ru.forceUpdate();
 				switch (rc) {
 				case NEW:
@@ -312,7 +310,7 @@ public class CommitCommand extends GitCommand<RevCommit> {
 		}
 	}
 
-	private void insertChangeId(ObjectId treeId) throws IOException {
+	private void insertChangeId(ObjectId treeId) {
 		ObjectId firstParentId = null;
 		if (!parents.isEmpty())
 			firstParentId = parents.get(0);
@@ -384,7 +382,14 @@ public class CommitCommand extends GitCommand<RevCommit> {
 
 					lastAddedFile = path;
 
-					if (fTree != null) {
+					if (fTree == null) {
+						// if no file exists on disk, neither add it to
+						// index nor to temporary in-core index
+
+						if (emptyCommit && hTree != null)
+							// this is a change
+							emptyCommit = false;
+					} else {
 						// create a new DirCacheEntry with data retrieved from
 						// disk
 						final DirCacheEntry dcEntry = new DirCacheEntry(path);
@@ -428,13 +433,6 @@ public class CommitCommand extends GitCommand<RevCommit> {
 								&& (hTree == null || !hTree.idEqual(fTree)
 										|| hTree.getEntryRawMode() != fTree
 												.getEntryRawMode()))
-							// this is a change
-							emptyCommit = false;
-					} else {
-						// if no file exists on disk, neither add it to
-						// index nor to temporary in-core index
-
-						if (emptyCommit && hTree != null)
 							// this is a change
 							emptyCommit = false;
 					}

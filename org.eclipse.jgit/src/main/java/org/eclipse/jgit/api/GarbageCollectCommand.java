@@ -200,7 +200,7 @@ public class GarbageCollectCommand extends GitCommand<Properties> {
 	 *             thrown if the repository statistics cannot be computed
 	 * @since 3.0
 	 */
-	public Properties getStatistics() throws GitAPIException {
+	public Properties getStatistics() {
 		try {
 			if (repo instanceof FileRepository) {
 				GC gc = new GC((FileRepository) repo);

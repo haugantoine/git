@@ -207,12 +207,11 @@ public class CreateBranchCommand extends GitCommand<Ref> {
 
 	private Ref createBranch() throws RefAlreadyExistsException,
 			RefNotFoundException, IOException {
-		boolean exists = checkBranchExists();
+		boolean exists = isBranchExisting();
+		checkBranchCreation(exists);
 		ObjectId startAt = getBranchStart();
 		String startPointFullName = getStartPointFullName();
 
-		// determine whether we are based on a commit,
-		// a branch, or a tag
 		try (RevWalk revWalk = new RevWalk(repo)) {
 			if (startPointFullName == null) {
 				return createBranchFromCommit(exists, startAt, revWalk);
@@ -227,52 +226,48 @@ public class CreateBranchCommand extends GitCommand<Ref> {
 		}
 	}
 
-	private boolean checkBranchExists()
-			throws IOException, RefAlreadyExistsException {
-		Ref refToCheck = repo.findRef(name);
-		boolean exists = refToCheck != null
-				&& refToCheck.getName().startsWith(Constants.R_HEADS);
+	private void checkBranchCreation(boolean exists)
+			throws RefAlreadyExistsException {
 		if (!force && exists)
 			throw new RefAlreadyExistsException(MessageFormat
 					.format(JGitText.get().refAlreadyExists1, name));
-		return exists;
+	}
+
+	private boolean isBranchExisting() throws IOException {
+		Ref refToCheck = repo.findRef(name);
+		return refToCheck != null
+				&& refToCheck.getName().startsWith(Constants.R_HEADS);
 	}
 
 	private ObjectId getBranchStart() throws AmbiguousObjectException,
 			IncorrectObjectTypeException, IOException, RefNotFoundException {
 		ObjectId startAt = null;
 		if (startCommit == null) {
-			startAt = resolveStartPoint();
+			String currentStartPoint = getStartPoint();
+			startAt = repo.resolve(currentStartPoint);
 			if (startAt == null)
 				throw new RefNotFoundException(MessageFormat.format(
 						JGitText.get().refNotResolved,
-						startPoint != null ? startPoint : Constants.HEAD));
+						currentStartPoint));
 		} else
 			startAt = startCommit.getId();
 		return startAt;
 	}
 
-	private ObjectId resolveStartPoint() throws AmbiguousObjectException,
-			IncorrectObjectTypeException, IOException {
-		return repo.resolve(startPoint != null ? startPoint : Constants.HEAD);
-	}
-
 	private String getStartPointFullName() throws IOException {
-		String startPointFullName = null;
 		if (startPoint != null) {
 			Ref baseRef = repo.findRef(startPoint);
 			if (baseRef != null)
-				startPointFullName = baseRef.getName();
+				return baseRef.getName();
 		}
-		return startPointFullName;
+		return null;
 	}
 
 	private Ref createBranchFromCommit(boolean exists, ObjectId startAt,
 			RevWalk revWalk)
 			throws MissingObjectException, IncorrectObjectTypeException,
 			IOException, AmbiguousObjectException {
-		String startPointFullName = getBaseCommit(revWalk);
-		return updateBranch(exists, startAt, startPointFullName, "commit"); //$NON-NLS-1$
+		return updateBranch(exists, startAt, getBaseCommit(revWalk), "commit"); //$NON-NLS-1$
 	}
 
 	private String getBaseCommit(RevWalk revWalk)
@@ -280,8 +275,13 @@ public class CreateBranchCommand extends GitCommand<Ref> {
 			IOException, AmbiguousObjectException {
 		if (startCommit != null)
 			return startCommit.getShortMessage();
-		RevCommit commit = revWalk.parseCommit(resolveStartPoint());
+		ObjectId startPointObjectId = repo.resolve(getStartPoint());
+		RevCommit commit = revWalk.parseCommit(startPointObjectId);
 		return commit.getShortMessage();
+	}
+
+	private String getStartPoint() {
+		return startPoint != null ? startPoint : Constants.HEAD;
 	}
 
 	private Ref createBranchFromTag(boolean exists, ObjectId startAt,
@@ -370,7 +370,7 @@ public class CreateBranchCommand extends GitCommand<Ref> {
 	private boolean hasToConfigureBranch(String baseBranch) {
 		return upstreamMode == SetupUpstreamMode.SET_UPSTREAM
 				|| upstreamMode == SetupUpstreamMode.TRACK
-				|| (upstreamMode != SetupUpstreamMode.NOTRACK
+				|| (upstreamMode == null
 						&& getRepositoryConfigurationRule(baseBranch));
 	}
 

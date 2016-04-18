@@ -42,17 +42,11 @@
  */
 package org.eclipse.jgit.attributes;
 
-import static org.eclipse.jgit.ignore.internal.IMatcher.NO_MATCH;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jgit.attributes.Attribute.State;
-import org.eclipse.jgit.errors.InvalidPatternException;
-import org.eclipse.jgit.ignore.FastIgnoreRule;
-import org.eclipse.jgit.ignore.internal.IMatcher;
-import org.eclipse.jgit.ignore.internal.PathMatcher;
 
 /**
  * A single attributes rule corresponding to one line in a .gitattributes file.
@@ -112,8 +106,6 @@ public class AttributesRule {
 	private boolean nameOnly;
 	private boolean dirOnly;
 
-	private IMatcher matcher;
-
 	/**
 	 * Create a new attribute rule with the given pattern. Assumes that the
 	 * pattern is already trimmed.
@@ -144,13 +136,6 @@ public class AttributesRule {
 			// Contains "/" but does not start with one
 			// Adding / to the start should not interfere with matching
 			pattern = "/" + pattern; //$NON-NLS-1$
-		}
-
-		try {
-			matcher = PathMatcher.createPathMatcher(pattern,
-					Character.valueOf(FastIgnoreRule.PATH_SEPARATOR), dirOnly);
-		} catch (InvalidPatternException e) {
-			matcher = NO_MATCH;
 		}
 
 		this.pattern = pattern;
@@ -187,25 +172,6 @@ public class AttributesRule {
 	 */
 	public String getPattern() {
 		return pattern;
-	}
-
-	/**
-	 * Returns <code>true</code> if a match was made.
-	 *
-	 * @param relativeTarget
-	 *            Name pattern of the file, relative to the base directory of
-	 *            this rule
-	 * @param isDirectory
-	 *            Whether the target file is a directory or not
-	 * @return True if a match was made.
-	 */
-	public boolean isMatch(String relativeTarget, boolean isDirectory) {
-		if (relativeTarget == null)
-			return false;
-		if (relativeTarget.length() == 0)
-			return false;
-		boolean match = matcher.matches(relativeTarget, isDirectory);
-		return match;
 	}
 
 	@Override

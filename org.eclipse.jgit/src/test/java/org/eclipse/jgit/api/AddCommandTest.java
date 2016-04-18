@@ -544,36 +544,6 @@ public class AddCommandTest extends RepositoryTestCase {
 	}
 
 	@Test
-	public void testAddIgnoredFile() throws Exception  {
-		FileUtils.mkdir(new File(db.getWorkTree(), "sub"));
-		File file = new File(db.getWorkTree(), "sub/a.txt");
-		FileUtils.createNewFile(file);
-		PrintWriter writer = new PrintWriter(file);
-		writer.print("content");
-		writer.close();
-
-		File ignoreFile = new File(db.getWorkTree(), ".gitignore");
-		FileUtils.createNewFile(ignoreFile);
-		writer = new PrintWriter(ignoreFile);
-		writer.print("sub/b.txt");
-		writer.close();
-
-		File file2 = new File(db.getWorkTree(), "sub/b.txt");
-		FileUtils.createNewFile(file2);
-		writer = new PrintWriter(file2);
-		writer.print("content b");
-		writer.close();
-
-		try (Git git = new Git(db)) {
-			git.add().addFilepattern("sub").call();
-
-			assertEquals(
-					"[sub/a.txt, mode:100644, content:content]",
-					indexState(CONTENT));
-		}
-	}
-
-	@Test
 	public void testAddWholeRepo() throws Exception  {
 		FileUtils.mkdir(new File(db.getWorkTree(), "sub"));
 		File file = new File(db.getWorkTree(), "sub/a.txt");

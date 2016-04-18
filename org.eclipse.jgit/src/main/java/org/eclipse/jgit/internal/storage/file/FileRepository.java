@@ -65,7 +65,6 @@ import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.internal.storage.file.ObjectDirectory.AlternateHandle;
 import org.eclipse.jgit.internal.storage.file.ObjectDirectory.AlternateRepository;
-import org.eclipse.jgit.internal.storage.reftree.RefTreeDatabase;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.CoreConfig.HideDotFiles;
@@ -205,15 +204,7 @@ public class FileRepository extends Repository {
 
 		String reftype = repoConfig.getString(
 				"extensions", null, "refsStorage"); //$NON-NLS-1$ //$NON-NLS-2$
-		if (repositoryFormatVersion >= 1 && reftype != null) {
-			if (StringUtils.equalsIgnoreCase(reftype, "reftree")) { //$NON-NLS-1$
-				refs = new RefTreeDatabase(this, new RefDirectory(this));
-			} else {
-				throw new IOException(JGitText.get().unknownRepositoryFormat);
-			}
-		} else {
 			refs = new RefDirectory(this);
-		}
 
 		objectDatabase = new ObjectDirectory(repoConfig, //
 				options.getObjectDirectory(), //

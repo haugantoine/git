@@ -46,8 +46,6 @@ package org.eclipse.jgit.util.io;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.eclipse.jgit.diff.RawText;
-
 /**
  * An input stream which canonicalizes EOLs bytes on the fly to '\n'.
  *
@@ -136,7 +134,7 @@ public class EolCanonicalizingInputStream extends InputStream {
 		final int end = off + len;
 
 		while (i < end) {
-			if (ptr == cnt && !fillBuffer()) {
+			if (ptr == cnt) {
 				break;
 			}
 
@@ -147,7 +145,7 @@ public class EolCanonicalizingInputStream extends InputStream {
 				continue;
 			}
 
-			if (ptr == cnt && !fillBuffer()) {
+			if (ptr == cnt) {
 				bs[i++] = '\r';
 				break;
 			}
@@ -175,17 +173,4 @@ public class EolCanonicalizingInputStream extends InputStream {
 		in.close();
 	}
 
-	private boolean fillBuffer() throws IOException {
-		cnt = in.read(buf, 0, buf.length);
-		if (cnt < 1)
-			return false;
-		if (detectBinary) {
-			isBinary = RawText.isBinary(buf, cnt);
-			detectBinary = false;
-			if (isBinary && abortIfBinary)
-				throw new IsBinaryException();
-		}
-		ptr = 0;
-		return true;
-	}
 }

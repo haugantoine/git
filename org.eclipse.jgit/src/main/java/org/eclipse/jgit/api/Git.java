@@ -154,19 +154,6 @@ public class Git implements AutoCloseable {
 	}
 
 	/**
-	 * Returns a command object to execute a {@code clone} command
-	 *
-	 * @see <a
-	 *      href="http://www.kernel.org/pub/software/scm/git/docs/git-clone.html"
-	 *      >Git documentation about clone</a>
-	 * @return a {@link CloneCommand} used to collect all optional parameters
-	 *         and to finally execute the {@code clone} command
-	 */
-	public static CloneCommand cloneRepository() {
-		return new CloneCommand();
-	}
-
-	/**
 	 * Returns a command to list remote branches/tags without a local
 	 * repository.
 	 *
@@ -239,28 +226,6 @@ public class Git implements AutoCloseable {
 	 */
 	public LogCommand log() {
 		return new LogCommand(repo);
-	}
-
-	/**
-	 * Returns a command object to execute a {@code Merge} command
-	 *
-	 * @see <a
-	 *      href="http://www.kernel.org/pub/software/scm/git/docs/git-merge.html"
-	 *      >Git documentation about Merge</a>
-	 * @return a {@link MergeCommand} used to collect all optional parameters
-	 *         and to finally execute the {@code Merge} command
-	 */
-	public MergeCommand merge() {
-		return new MergeCommand(repo);
-	}
-
-	/**
-	 * Returns a command object to execute a {@code Pull} command
-	 *
-	 * @return a {@link PullCommand}
-	 */
-	public PullCommand pull() {
-		return new PullCommand(repo);
 	}
 
 	/**
@@ -359,45 +324,6 @@ public class Git implements AutoCloseable {
 	 */
 	public PushCommand push() {
 		return new PushCommand(repo);
-	}
-
-	/**
-	 * Returns a command object to execute a {@code cherry-pick} command
-	 *
-	 * @see <a
-	 *      href="http://www.kernel.org/pub/software/scm/git/docs/git-cherry-pick.html"
-	 *      >Git documentation about cherry-pick</a>
-	 * @return a {@link CherryPickCommand} used to collect all optional
-	 *         parameters and to finally execute the {@code cherry-pick} command
-	 */
-	public CherryPickCommand cherryPick() {
-		return new CherryPickCommand(repo);
-	}
-
-	/**
-	 * Returns a command object to execute a {@code revert} command
-	 *
-	 * @see <a
-	 *      href="http://www.kernel.org/pub/software/scm/git/docs/git-revert.html"
-	 *      >Git documentation about reverting changes</a>
-	 * @return a {@link RevertCommand} used to collect all optional parameters
-	 *         and to finally execute the {@code cherry-pick} command
-	 */
-	public RevertCommand revert() {
-		return new RevertCommand(repo);
-	}
-
-	/**
-	 * Returns a command object to execute a {@code Rebase} command
-	 *
-	 * @see <a
-	 *      href="http://www.kernel.org/pub/software/scm/git/docs/git-rebase.html"
-	 *      >Git documentation about rebase</a>
-	 * @return a {@link RebaseCommand} used to collect all optional parameters
-	 *         and to finally execute the {@code rebase} command
-	 */
-	public RebaseCommand rebase() {
-		return new RebaseCommand(repo);
 	}
 
 	/**
@@ -538,35 +464,12 @@ public class Git implements AutoCloseable {
 	}
 
 	/**
-	 * Returns a command object to execute a {@code diff} command
-	 *
-	 * @see <a
-	 *      href="http://www.kernel.org/pub/software/scm/git/docs/git-diff.html"
-	 *      >Git documentation about diff</a>
-	 * @return a {@link DiffCommand} used to collect all optional parameters and
-	 *         to finally execute the {@code diff} command
-	 */
-	public DiffCommand diff() {
-		return new DiffCommand(repo);
-	}
-
-	/**
 	 * Returns a command object used to delete tags
 	 *
 	 * @return a {@link DeleteTagCommand}
 	 */
 	public DeleteTagCommand tagDelete() {
 		return new DeleteTagCommand(repo);
-	}
-
-	/**
-	 * Returns a command object to execute a {@code submodule add} command
-	 *
-	 * @return a {@link SubmoduleAddCommand} used to add a new submodule to a
-	 *         parent repository
-	 */
-	public SubmoduleAddCommand submoduleAdd() {
-		return new SubmoduleAddCommand(repo);
 	}
 
 	/**
@@ -601,16 +504,6 @@ public class Git implements AutoCloseable {
 	}
 
 	/**
-	 * Returns a command object to execute a {@code submodule update} command
-	 *
-	 * @return a {@link SubmoduleUpdateCommand} used to update the submodules in
-	 *         a repository to the configured revision
-	 */
-	public SubmoduleUpdateCommand submoduleUpdate() {
-		return new SubmoduleUpdateCommand(repo);
-	}
-
-	/**
 	 * Returns a command object used to list stashed commits
 	 *
 	 * @return a {@link StashListCommand}
@@ -630,16 +523,6 @@ public class Git implements AutoCloseable {
 	}
 
 	/**
-	 * Returns a command object used to apply a stashed commit
-	 *
-	 * @return a {@link StashApplyCommand}
-	 * @since 2.0
-	 */
-	public StashApplyCommand stashApply() {
-		return new StashApplyCommand(repo);
-	}
-
-	/**
 	 * Returns a command object used to drop a stashed commit
 	 *
 	 * @return a {@link StashDropCommand}
@@ -647,21 +530,6 @@ public class Git implements AutoCloseable {
 	 */
 	public StashDropCommand stashDrop() {
 		return new StashDropCommand(repo);
-	}
-
-	/**
-	 * Returns a command object to execute a {@code apply} command
-	 *
-	 * @see <a
-	 *      href="http://www.kernel.org/pub/software/scm/git/docs/git-apply.html"
-	 *      >Git documentation about apply</a>
-	 *
-	 * @return a {@link ApplyCommand} used to collect all optional parameters
-	 *         and to finally execute the {@code apply} command
-	 * @since 2.0
-	 */
-	public ApplyCommand apply() {
-		return new ApplyCommand(repo);
 	}
 
 	/**

@@ -375,15 +375,12 @@ public abstract class RefUpdate {
 	 *            message.
 	 */
 	public void setRefLogMessage(final String msg, final boolean appendStatus) {
-		if (msg == null && !appendStatus)
-			disableRefLog();
-		else if (msg == null && appendStatus) {
+		if (msg == null && appendStatus) {
 			refLogMessage = ""; //$NON-NLS-1$
-			refLogIncludeResult = true;
 		} else {
 			refLogMessage = msg;
-			refLogIncludeResult = appendStatus;
 		}
+		refLogIncludeResult = appendStatus;
 	}
 
 	/** Don't record this update in the ref's associated reflog. */

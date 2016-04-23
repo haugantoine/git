@@ -142,10 +142,10 @@ public class AddNoteCommand extends GitCommand<Note> {
 		ObjectId commit = inserter.insert(builder);
 		inserter.flush();
 		RefUpdate refUpdate = repo.updateRef(notesRef);
-		if (notesCommit != null)
-			refUpdate.setExpectedOldObjectId(notesCommit);
-		else
+		if (notesCommit == null)
 			refUpdate.setExpectedOldObjectId(ObjectId.zeroId());
+		else
+			refUpdate.setExpectedOldObjectId(notesCommit);
 		refUpdate.setNewObjectId(commit);
 		refUpdate.update(walk);
 	}

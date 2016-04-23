@@ -45,8 +45,8 @@ package org.eclipse.jgit.transport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.PushCertificate.NonceStatus;
 import org.junit.Before;
@@ -62,7 +62,7 @@ public class HMACSHA1NonceGeneratorTest {
 	@Before
 	public void setUp() {
 		gen = new HMACSHA1NonceGenerator("sekret");
-		db = new InMemoryRepository(new DfsRepositoryDescription("db"));
+		db = new DfsRepository(new DfsRepositoryDescription("db"));
 	}
 
 	@Test

@@ -70,8 +70,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.BatchRefUpdate;
@@ -668,7 +668,7 @@ public class RefTreeDatabaseTest {
 		}
 	}
 
-	private class InMemRefTreeRepo extends InMemoryRepository {
+	private class InMemRefTreeRepo extends DfsRepository {
 		private final RefTreeDatabase refs;
 
 		InMemRefTreeRepo(DfsRepositoryDescription repoDesc) {

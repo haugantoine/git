@@ -57,8 +57,8 @@ import org.eclipse.jgit.lib.RepositoryBuilder;
  * @param <R>
  *            type of the repository class.
  */
-public abstract class DfsRepositoryBuilder<B extends DfsRepositoryBuilder, R extends DfsRepository>
-		extends RepositoryBuilder<B, R> {
+public class DfsRepositoryBuilder
+		extends RepositoryBuilder<DfsRepositoryBuilder, DfsRepository> {
 	private DfsReaderOptions readerOptions;
 
 	private DfsRepositoryDescription repoDesc;
@@ -75,7 +75,7 @@ public abstract class DfsRepositoryBuilder<B extends DfsRepositoryBuilder, R ext
 	 *            new reader options object.
 	 * @return {@code this}
 	 */
-	public B setReaderOptions(DfsReaderOptions opt) {
+	public DfsRepositoryBuilder setReaderOptions(DfsReaderOptions opt) {
 		readerOptions = opt;
 		return self();
 	}
@@ -92,13 +92,15 @@ public abstract class DfsRepositoryBuilder<B extends DfsRepositoryBuilder, R ext
 	 *            new repository description object.
 	 * @return {@code this}
 	 */
-	public B setRepositoryDescription(DfsRepositoryDescription desc) {
+	public DfsRepositoryBuilder setRepositoryDescription(
+			DfsRepositoryDescription desc) {
 		repoDesc = desc;
 		return self();
 	}
 
 	@Override
-	public B setup() throws IllegalArgumentException, IOException {
+	public DfsRepositoryBuilder setup()
+			throws IllegalArgumentException, IOException {
 		super.setup();
 		if (getReaderOptions() == null)
 			setReaderOptions(new DfsReaderOptions());
@@ -122,39 +124,41 @@ public abstract class DfsRepositoryBuilder<B extends DfsRepositoryBuilder, R ext
 	 *             the builder's parameters.
 	 */
 	@Override
-	public abstract R build() throws IOException;
+	public DfsRepository build() throws IOException {
+		return new DfsRepository(this);
+	}
 
 	// We don't support local file IO and thus shouldn't permit these to set.
 
 	@Override
-	public B setGitDir(File gitDir) {
+	public DfsRepositoryBuilder setGitDir(File gitDir) {
 		if (gitDir != null)
 			throw new IllegalArgumentException();
 		return self();
 	}
 
 	@Override
-	public B setObjectDirectory(File objectDirectory) {
+	public DfsRepositoryBuilder setObjectDirectory(File objectDirectory) {
 		if (objectDirectory != null)
 			throw new IllegalArgumentException();
 		return self();
 	}
 
 	@Override
-	public B addAlternateObjectDirectory(File other) {
+	public DfsRepositoryBuilder addAlternateObjectDirectory(File other) {
 		throw new UnsupportedOperationException(
 				JGitText.get().unsupportedAlternates);
 	}
 
 	@Override
-	public B setWorkTree(File workTree) {
+	public DfsRepositoryBuilder setWorkTree(File workTree) {
 		if (workTree != null)
 			throw new IllegalArgumentException();
 		return self();
 	}
 
 	@Override
-	public B setIndexFile(File indexFile) {
+	public DfsRepositoryBuilder setIndexFile(File indexFile) {
 		if (indexFile != null)
 			throw new IllegalArgumentException();
 		return self();

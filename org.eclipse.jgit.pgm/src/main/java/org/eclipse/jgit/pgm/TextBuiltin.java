@@ -56,6 +56,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
 
@@ -157,30 +158,29 @@ public abstract class TextBuiltin {
 				outs = new FileOutputStream(FileDescriptor.out);
 			if (errs == null)
 				errs = new FileOutputStream(FileDescriptor.err);
-			BufferedWriter outbufw;
-			if (outputEncoding != null)
-				outbufw = new BufferedWriter(new OutputStreamWriter(outs,
-						outputEncoding));
-			else
-				outbufw = new BufferedWriter(new OutputStreamWriter(outs));
-			outw = new ThrowingPrintWriter(outbufw);
-			BufferedWriter errbufw;
-			if (outputEncoding != null)
-				errbufw = new BufferedWriter(new OutputStreamWriter(errs,
-						outputEncoding));
-			else
-				errbufw = new BufferedWriter(new OutputStreamWriter(errs));
-			errw = new ThrowingPrintWriter(errbufw);
+			outw = new ThrowingPrintWriter(new BufferedWriter(
+					getOutputStreamWritter(outputEncoding, outs)));
+			errw = new ThrowingPrintWriter(new BufferedWriter(
+					getOutputStreamWritter(outputEncoding, errs)));
 		} catch (IOException e) {
 			throw die(CLIText.get().cannotCreateOutputStream);
 		}
 
+		db = repository;
 		if (repository != null && repository.getDirectory() != null) {
-			db = repository;
 			gitdir = repository.getDirectory().getAbsolutePath();
 		} else {
-			db = repository;
 			gitdir = gitDir;
+		}
+	}
+
+	private OutputStreamWriter getOutputStreamWritter(
+			final String outputEncoding, OutputStream outStream)
+			throws UnsupportedEncodingException {
+		if (outputEncoding == null) {
+			return new OutputStreamWriter(outStream);
+		} else {
+			return new OutputStreamWriter(outStream, outputEncoding);
 		}
 	}
 

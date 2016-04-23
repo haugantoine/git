@@ -58,8 +58,8 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.eclipse.jgit.errors.PackProtocolException;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -120,7 +120,7 @@ public class PushCertificateParserTest {
 
 	@Before
 	public void setUp() {
-		db = new InMemoryRepository(new DfsRepositoryDescription("repo"));
+		db = new DfsRepository(new DfsRepositoryDescription("repo"));
 	}
 
 	private static SignedPushConfig newEnabledConfig() {

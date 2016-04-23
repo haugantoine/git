@@ -64,8 +64,8 @@ import java.util.Collections;
 
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectIdRef;
@@ -82,12 +82,14 @@ import org.junit.Test;
 
 public class RefTreeTest {
 	private static final String R_MASTER = R_HEADS + "master";
-	private InMemoryRepository repo;
-	private TestRepository<InMemoryRepository> git;
+
+	private DfsRepository repo;
+
+	private TestRepository<DfsRepository> git;
 
 	@Before
 	public void setUp() throws IOException {
-		repo = new InMemoryRepository(new DfsRepositoryDescription("RefTree"));
+		repo = new DfsRepository(new DfsRepositoryDescription("RefTree"));
 		git = new TestRepository<>(repo);
 	}
 

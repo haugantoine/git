@@ -53,8 +53,8 @@ import java.util.List;
 
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.NullProgressMonitor;
 import org.eclipse.jgit.lib.ObjectId;
@@ -71,8 +71,10 @@ public class AtomicPushTest {
 	private URIish uri;
 	private TestProtocol<Object> testProtocol;
 	private Object ctx = new Object();
-	private InMemoryRepository server;
-	private InMemoryRepository client;
+
+	private DfsRepository server;
+
+	private DfsRepository client;
 	private ObjectId obj1;
 	private ObjectId obj2;
 
@@ -104,8 +106,8 @@ public class AtomicPushTest {
 		Transport.unregister(testProtocol);
 	}
 
-	private static InMemoryRepository newRepo(String name) {
-		return new InMemoryRepository(new DfsRepositoryDescription(name));
+	private static DfsRepository newRepo(String name) {
+		return new DfsRepository(new DfsRepositoryDescription(name));
 	}
 
 	@Test

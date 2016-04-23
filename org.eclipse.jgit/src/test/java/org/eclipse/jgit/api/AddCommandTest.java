@@ -67,6 +67,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.treewalk.TreeWalk;
@@ -74,13 +75,22 @@ import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
+@RunWith(MockitoJUnitRunner.class)
 public class AddCommandTest extends RepositoryTestCase {
+
+	private static final String A_TXT_FILE_NAME = "a.txt"; //$NON-NLS-1$
+
+	@Mock
+	private Repository repository;
 
 	@Test
 	public void testAddNothing() throws GitAPIException {
-		try (Git git = new Git(db)) {
-			git.add().call();
+		try {
+			new AddCommand(repository).call();
 			fail("Expected IllegalArgumentException");
 		} catch (NoFilepatternException e) {
 			// expected
@@ -91,21 +101,21 @@ public class AddCommandTest extends RepositoryTestCase {
 	@Test
 	public void testAddNonExistingSingleFile() throws GitAPIException {
 		try (Git git = new Git(db)) {
-			DirCache dc = git.add().addFilepattern("a.txt").call();
+			DirCache dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals(0, dc.getEntryCount());
 		}
 	}
 
 	@Test
 	public void testAddExistingSingleFile() throws IOException, GitAPIException {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("content");
 		writer.close();
 
 		try (Git git = new Git(db)) {
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			assertEquals(
 					"[a.txt, mode:100644, content:content]",
@@ -230,7 +240,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	// TODO
 	@Ignore
 	public void testBadCleanFilter() throws IOException, GitAPIException {
-		writeTrashFile("a.txt", "foo");
+		writeTrashFile(A_TXT_FILE_NAME, "foo");
 		File script = writeTempFile("sedfoo s/o/e/g");
 
 		try (Git git = new Git(db)) {
@@ -241,7 +251,7 @@ public class AddCommandTest extends RepositoryTestCase {
 			writeTrashFile(".gitattributes", "*.txt filter=tstFilter");
 
 			try {
-				git.add().addFilepattern("a.txt").call();
+				git.add().addFilepattern(A_TXT_FILE_NAME).call();
 				fail("Didn't received the expected exception");
 			} catch (FilterFailedException e) {
 				assertEquals(127, e.getReturnCode());
@@ -253,7 +263,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	// TODO
 	@Ignore
 	public void testBadCleanFilter2() throws IOException, GitAPIException {
-		writeTrashFile("a.txt", "foo");
+		writeTrashFile(A_TXT_FILE_NAME, "foo");
 		File script = writeTempFile("sed s/o/e/g");
 
 		try (Git git = new Git(db)) {
@@ -264,7 +274,7 @@ public class AddCommandTest extends RepositoryTestCase {
 			writeTrashFile(".gitattributes", "*.txt filter=tstFilter");
 
 			try {
-				git.add().addFilepattern("a.txt").call();
+				git.add().addFilepattern(A_TXT_FILE_NAME).call();
 				fail("Didn't received the expected exception");
 			} catch (FilterFailedException e) {
 				assertEquals(127, e.getReturnCode());
@@ -277,7 +287,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	@Ignore
 	public void testCleanFilterReturning12() throws IOException,
 			GitAPIException {
-		writeTrashFile("a.txt", "foo");
+		writeTrashFile(A_TXT_FILE_NAME, "foo");
 		File script = writeTempFile("exit 12");
 
 		try (Git git = new Git(db)) {
@@ -288,7 +298,7 @@ public class AddCommandTest extends RepositoryTestCase {
 			writeTrashFile(".gitattributes", "*.txt filter=tstFilter");
 
 			try {
-				git.add().addFilepattern("a.txt").call();
+				git.add().addFilepattern(A_TXT_FILE_NAME).call();
 				fail("Didn't received the expected exception");
 			} catch (FilterFailedException e) {
 				assertEquals(12, e.getReturnCode());
@@ -298,7 +308,7 @@ public class AddCommandTest extends RepositoryTestCase {
 
 	@Test
 	public void testNotApplicableFilter() throws IOException, GitAPIException {
-		writeTrashFile("a.txt", "foo");
+		writeTrashFile(A_TXT_FILE_NAME, "foo");
 		File script = writeTempFile("sed s/o/e/g");
 
 		try (Git git = new Git(db)) {
@@ -308,7 +318,7 @@ public class AddCommandTest extends RepositoryTestCase {
 			config.save();
 			writeTrashFile(".gitattributes", "*.txt filter=tstFilter");
 
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			assertEquals("[a.txt, mode:100644, content:foo]",
 					indexState(CONTENT));
@@ -324,7 +334,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	@Test
 	public void testAddExistingSingleSmallFileWithNewLine() throws IOException,
 			GitAPIException {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("row1\r\nrow2");
@@ -332,15 +342,15 @@ public class AddCommandTest extends RepositoryTestCase {
 
 		try (Git git = new Git(db)) {
 			db.getConfig().setString("core", null, "autocrlf", "false");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:row1\r\nrow2]",
 					indexState(CONTENT));
 			db.getConfig().setString("core", null, "autocrlf", "true");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:row1\nrow2]",
 					indexState(CONTENT));
 			db.getConfig().setString("core", null, "autocrlf", "input");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:row1\nrow2]",
 					indexState(CONTENT));
 		}
@@ -349,7 +359,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	@Test
 	public void testAddExistingSingleMediumSizeFileWithNewLine()
 			throws IOException, GitAPIException {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		StringBuilder data = new StringBuilder();
 		for (int i = 0; i < 1000; ++i) {
@@ -362,15 +372,15 @@ public class AddCommandTest extends RepositoryTestCase {
 		String lfData = data.toString().replaceAll("\r", "");
 		try (Git git = new Git(db)) {
 			db.getConfig().setString("core", null, "autocrlf", "false");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:" + data + "]",
 					indexState(CONTENT));
 			db.getConfig().setString("core", null, "autocrlf", "true");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:" + lfData + "]",
 					indexState(CONTENT));
 			db.getConfig().setString("core", null, "autocrlf", "input");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:" + lfData + "]",
 					indexState(CONTENT));
 		}
@@ -379,7 +389,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	@Test
 	public void testAddExistingSingleBinaryFile() throws IOException,
 			GitAPIException {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("row1\r\nrow2\u0000");
@@ -387,15 +397,15 @@ public class AddCommandTest extends RepositoryTestCase {
 
 		try (Git git = new Git(db)) {
 			db.getConfig().setString("core", null, "autocrlf", "false");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:row1\r\nrow2\u0000]",
 					indexState(CONTENT));
 			db.getConfig().setString("core", null, "autocrlf", "true");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:row1\r\nrow2\u0000]",
 					indexState(CONTENT));
 			db.getConfig().setString("core", null, "autocrlf", "input");
-			git.add().addFilepattern("a.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).call();
 			assertEquals("[a.txt, mode:100644, content:row1\r\nrow2\u0000]",
 					indexState(CONTENT));
 		}
@@ -423,14 +433,14 @@ public class AddCommandTest extends RepositoryTestCase {
 	@Test
 	public void testAddExistingSingleFileTwice() throws IOException,
 			GitAPIException {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("content");
 		writer.close();
 
 		try (Git git = new Git(db)) {
-			DirCache dc = git.add().addFilepattern("a.txt").call();
+			DirCache dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			dc.getEntry(0).getObjectId();
 
@@ -438,7 +448,7 @@ public class AddCommandTest extends RepositoryTestCase {
 			writer.print("other content");
 			writer.close();
 
-			dc = git.add().addFilepattern("a.txt").call();
+			dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			assertEquals(
 					"[a.txt, mode:100644, content:other content]",
@@ -448,14 +458,14 @@ public class AddCommandTest extends RepositoryTestCase {
 
 	@Test
 	public void testAddExistingSingleFileTwiceWithCommit() throws Exception {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("content");
 		writer.close();
 
 		try (Git git = new Git(db)) {
-			DirCache dc = git.add().addFilepattern("a.txt").call();
+			DirCache dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			dc.getEntry(0).getObjectId();
 
@@ -465,7 +475,7 @@ public class AddCommandTest extends RepositoryTestCase {
 			writer.print("other content");
 			writer.close();
 
-			dc = git.add().addFilepattern("a.txt").call();
+			dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			assertEquals(
 					"[a.txt, mode:100644, content:other content]",
@@ -475,20 +485,20 @@ public class AddCommandTest extends RepositoryTestCase {
 
 	@Test
 	public void testAddRemovedFile() throws Exception {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("content");
 		writer.close();
 
 		try (Git git = new Git(db)) {
-			DirCache dc = git.add().addFilepattern("a.txt").call();
+			DirCache dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			dc.getEntry(0).getObjectId();
 			FileUtils.delete(file);
 
 			// is supposed to do nothing
-			dc = git.add().addFilepattern("a.txt").call();
+			dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			assertEquals(
 					"[a.txt, mode:100644, content:content]",
@@ -498,14 +508,14 @@ public class AddCommandTest extends RepositoryTestCase {
 
 	@Test
 	public void testAddRemovedCommittedFile() throws Exception {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("content");
 		writer.close();
 
 		try (Git git = new Git(db)) {
-			DirCache dc = git.add().addFilepattern("a.txt").call();
+			DirCache dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			git.commit().setMessage("commit a.txt").call();
 
@@ -513,7 +523,7 @@ public class AddCommandTest extends RepositoryTestCase {
 			FileUtils.delete(file);
 
 			// is supposed to do nothing
-			dc = git.add().addFilepattern("a.txt").call();
+			dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			assertEquals(
 					"[a.txt, mode:100644, content:content]",
@@ -525,7 +535,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	public void testAddWithConflicts() throws Exception {
 		// prepare conflict
 
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("content");
@@ -542,17 +552,17 @@ public class AddCommandTest extends RepositoryTestCase {
 		DirCacheBuilder builder = dc.builder();
 
 		addEntryToBuilder("b.txt", file2, newObjectInserter, builder, 0);
-		addEntryToBuilder("a.txt", file, newObjectInserter, builder, 1);
+		addEntryToBuilder(A_TXT_FILE_NAME, file, newObjectInserter, builder, 1);
 
 		writer = new PrintWriter(file);
 		writer.print("other content");
 		writer.close();
-		addEntryToBuilder("a.txt", file, newObjectInserter, builder, 3);
+		addEntryToBuilder(A_TXT_FILE_NAME, file, newObjectInserter, builder, 3);
 
 		writer = new PrintWriter(file);
 		writer.print("our content");
 		writer.close();
-		addEntryToBuilder("a.txt", file, newObjectInserter, builder, 2)
+		addEntryToBuilder(A_TXT_FILE_NAME, file, newObjectInserter, builder, 2)
 				.getObjectId();
 
 		builder.commit();
@@ -567,7 +577,7 @@ public class AddCommandTest extends RepositoryTestCase {
 		// now the test begins
 
 		try (Git git = new Git(db)) {
-			dc = git.add().addFilepattern("a.txt").call();
+			dc = git.add().addFilepattern(A_TXT_FILE_NAME).call();
 
 			assertEquals(
 					"[a.txt, mode:100644, content:our content]" +
@@ -578,7 +588,7 @@ public class AddCommandTest extends RepositoryTestCase {
 
 	@Test
 	public void testAddTwoFiles() throws Exception  {
-		File file = new File(db.getWorkTree(), "a.txt");
+		File file = new File(db.getWorkTree(), A_TXT_FILE_NAME);
 		FileUtils.createNewFile(file);
 		PrintWriter writer = new PrintWriter(file);
 		writer.print("content");
@@ -591,7 +601,7 @@ public class AddCommandTest extends RepositoryTestCase {
 		writer.close();
 
 		try (Git git = new Git(db)) {
-			git.add().addFilepattern("a.txt").addFilepattern("b.txt").call();
+			git.add().addFilepattern(A_TXT_FILE_NAME).addFilepattern("b.txt").call();
 			assertEquals(
 					"[a.txt, mode:100644, content:content]" +
 					"[b.txt, mode:100644, content:content b]",
@@ -789,7 +799,7 @@ public class AddCommandTest extends RepositoryTestCase {
 	@Test
 	public void testAssumeUnchanged() throws Exception {
 		try (Git git = new Git(db)) {
-			String path = "a.txt";
+			String path = A_TXT_FILE_NAME;
 			writeTrashFile(path, "content");
 			git.add().addFilepattern(path).call();
 			String path2 = "b.txt";
@@ -959,7 +969,7 @@ public class AddCommandTest extends RepositoryTestCase {
 		};
 
 		Git git = Git.open(db.getDirectory(), executableFs);
-		String path = "a.txt";
+		String path = A_TXT_FILE_NAME;
 		writeTrashFile(path, "content");
 		git.add().addFilepattern(path).call();
 		RevCommit commit1 = git.commit().setMessage("commit").call();

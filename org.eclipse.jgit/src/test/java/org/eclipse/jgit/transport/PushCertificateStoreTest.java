@@ -61,8 +61,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.lib.BatchRefUpdate;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.NullProgressMonitor;
@@ -107,12 +107,13 @@ public class PushCertificateStoreTest {
 	}
 
 	private AtomicInteger ts = new AtomicInteger(1433954361);
-	private InMemoryRepository repo;
+
+	private DfsRepository repo;
 	private PushCertificateStore store;
 
 	@Before
 	public void setUp() throws Exception {
-		repo = new InMemoryRepository(new DfsRepositoryDescription("repo"));
+		repo = new DfsRepository(new DfsRepositoryDescription("repo"));
 		store = newStore();
 	}
 

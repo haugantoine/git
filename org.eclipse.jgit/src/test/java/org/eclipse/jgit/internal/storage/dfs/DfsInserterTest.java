@@ -72,11 +72,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class DfsInserterTest {
-	InMemoryRepository db;
+	DfsRepository db;
 
 	@Before
 	public void setUp() {
-		db = new InMemoryRepository(new DfsRepositoryDescription("test"));
+		db = new DfsRepository(new DfsRepositoryDescription("test"));
 	}
 
 	@Test

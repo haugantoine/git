@@ -54,8 +54,8 @@ import static org.junit.Assert.assertTrue;
 import java.util.Date;
 import java.util.regex.Pattern;
 
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
@@ -72,13 +72,15 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class TestRepositoryTest {
-	private TestRepository<InMemoryRepository> tr;
-	private InMemoryRepository repo;
+	private TestRepository<DfsRepository> tr;
+
+	private DfsRepository repo;
 	private RevWalk rw;
 
 	@Before
 	public void setUp() throws Exception {
-		tr = new TestRepository<>(new InMemoryRepository(
+		tr = new TestRepository<>(
+				new DfsRepository(
 				new DfsRepositoryDescription("test")));
 		repo = tr.getRepository();
 		rw = tr.getRevWalk();

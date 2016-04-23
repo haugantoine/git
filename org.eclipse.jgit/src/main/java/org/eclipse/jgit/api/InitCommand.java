@@ -79,35 +79,37 @@ public class InitCommand implements Callable<Git> {
 			if (bare)
 				builder.setBare();
 			builder.readEnvironment();
-			if (gitDir != null)
-				builder.setGitDir(gitDir);
-			else
+			if (gitDir == null)
 				gitDir = builder.getGitDir();
-			if (directory != null) {
+			else
+				builder.setGitDir(gitDir);
+			if (directory == null) {
+				if (builder.getGitDir() == null) {
+					String dStr = SystemReader.getInstance()
+							.getProperty("user.dir"); //$NON-NLS-1$
+					if (dStr == null)
+						dStr = "."; //$NON-NLS-1$
+					File d = new File(dStr);
+					if (!bare)
+						d = new File(d, Constants.DOT_GIT);
+					builder.setGitDir(d);
+				} else {
+					// directory was not set but gitDir was set
+					if (!bare) {
+						String dStr = SystemReader.getInstance()
+								.getProperty("user.dir"); //$NON-NLS-1$
+						if (dStr == null)
+							dStr = "."; //$NON-NLS-1$
+						builder.setWorkTree(new File(dStr));
+					}
+				}
+			} else {
 				if (bare)
 					builder.setGitDir(directory);
 				else {
 					builder.setWorkTree(directory);
 					if (gitDir == null)
 						builder.setGitDir(new File(directory, Constants.DOT_GIT));
-				}
-			} else if (builder.getGitDir() == null) {
-				String dStr = SystemReader.getInstance()
-						.getProperty("user.dir"); //$NON-NLS-1$
-				if (dStr == null)
-					dStr = "."; //$NON-NLS-1$
-				File d = new File(dStr);
-				if (!bare)
-					d = new File(d, Constants.DOT_GIT);
-				builder.setGitDir(d);
-			} else {
-				// directory was not set but gitDir was set
-				if (!bare) {
-					String dStr = SystemReader.getInstance().getProperty(
-							"user.dir"); //$NON-NLS-1$
-					if (dStr == null)
-						dStr = "."; //$NON-NLS-1$
-					builder.setWorkTree(new File(dStr));
 				}
 			}
 			Repository repository = builder.build();

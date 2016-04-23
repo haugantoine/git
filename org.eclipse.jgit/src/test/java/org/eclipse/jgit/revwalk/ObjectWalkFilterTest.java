@@ -49,9 +49,8 @@ import static org.junit.Assert.assertTrue;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.Sets;
@@ -64,7 +63,7 @@ import java.io.IOException;
 import java.util.Set;
 
 public class ObjectWalkFilterTest {
-	private TestRepository<InMemoryRepository> tr;
+	private TestRepository<DfsRepository> tr;
 	private ObjectWalk rw;
 
 	// 3 commits, 2 top-level trees, 4 subtrees, 3 blobs
@@ -72,7 +71,8 @@ public class ObjectWalkFilterTest {
 
 	@Before
 	public void setUp() throws Exception {
-		tr = new TestRepository<>(new InMemoryRepository(
+		tr = new TestRepository<>(
+				new DfsRepository(
 				new DfsRepositoryDescription("test")));
 		rw = new ObjectWalk(tr.getRepository());
 

@@ -55,8 +55,8 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.dfs.DfsRepository;
 import org.eclipse.jgit.internal.storage.dfs.DfsRepositoryDescription;
-import org.eclipse.jgit.internal.storage.dfs.InMemoryRepository;
 import org.eclipse.jgit.junit.TestRepository;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
@@ -93,16 +93,16 @@ public class TestProtocolTest {
 	}
 
 	private List<TransportProtocol> protos;
-	private TestRepository<InMemoryRepository> local;
-	private TestRepository<InMemoryRepository> remote;
+	private TestRepository<DfsRepository> local;
+	private TestRepository<DfsRepository> remote;
 
   @Before
 	public void setUp() throws Exception {
 		protos = new ArrayList<TransportProtocol>();
-		local = new TestRepository<InMemoryRepository>(
-				new InMemoryRepository(new DfsRepositoryDescription("local")));
-		remote = new TestRepository<InMemoryRepository>(
-				new InMemoryRepository(new DfsRepositoryDescription("remote")));
+		local = new TestRepository<DfsRepository>(
+				new DfsRepository(new DfsRepositoryDescription("local")));
+		remote = new TestRepository<DfsRepository>(
+				new DfsRepository(new DfsRepositoryDescription("remote")));
   }
 
 	@After

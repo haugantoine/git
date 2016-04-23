@@ -53,7 +53,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 import org.eclipse.jgit.junit.LocalDiskRepositoryTestCase;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
@@ -69,8 +68,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		FileUtils.mkdir(d);
 
 		assertEquals(r.getDirectory(),
-				new RepositoryBuilder()
-				.findGitDir(d).getGitDir());
+				Repository.getAutomagicallyDetectGitDirectory(d));
 	}
 
 	@SuppressWarnings("unused")
@@ -161,18 +159,12 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File dotGit = new File(dir, Constants.DOT_GIT);
 		new FileWriter(dotGit).append(
 				"gitdir: " + repo1.getDirectory().getAbsolutePath()).close();
-		RepositoryBuilder builder = new RepositoryBuilder();
-
-		builder.setWorkTree(dir);
-		builder.findGitDir(dir);
-		assertEquals(repo1.getDirectory().getAbsolutePath(), builder
-				.getGitDir().getAbsolutePath());
-		builder.setMustExist(true);
-		Repository repo2 = builder.build();
+		Repository repo2 = Repository.createRepositoryMustExist(dir);
 
 		// The tmp directory may be a symlink
 		assertEquals(repo1.getDirectory().getCanonicalPath(), repo2
 				.getDirectory().getCanonicalPath());
 		assertEquals(dir, repo2.getWorkTree());
 	}
+
 }

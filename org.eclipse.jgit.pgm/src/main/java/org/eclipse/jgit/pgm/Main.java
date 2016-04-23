@@ -57,7 +57,6 @@ import java.util.List;
 import org.eclipse.jgit.awtui.AwtAuthenticator;
 import org.eclipse.jgit.awtui.AwtCredentialsProvider;
 import org.eclipse.jgit.errors.TransportException;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.pgm.internal.CLIText;
 import org.eclipse.jgit.pgm.opt.CmdLineParser;
@@ -284,13 +283,12 @@ public class Main {
 	 *             the repository cannot be opened.
 	 */
 	protected Repository openGitDir(String aGitdir) throws IOException {
-		RepositoryBuilder rb = new RepositoryBuilder() //
-				.setGitDir(aGitdir != null ? new File(aGitdir) : null) //
-				.readEnvironment() //
-				.findGitDir();
-		if (rb.getGitDir() == null)
+		try {
+		return Repository.createGitDirEnvRepository(
+				aGitdir != null ? new File(aGitdir) : null);
+		} catch (IOException e) {
 			throw new Die(CLIText.get().cantFindGitDirectory);
-		return rb.build();
+		}
 	}
 
 	private static boolean installConsole() {

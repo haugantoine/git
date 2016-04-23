@@ -106,6 +106,90 @@ import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 public abstract class Repository implements AutoCloseable {
 	private static final ListenerList globalListeners = new ListenerList();
 
+	public static File getAutomagicallyDetectGitDirectory(File d) {
+		return new RepositoryBuilder().findGitDir(d).getGitDir();
+	}
+
+	public static File getGitDir(File dir) {
+		RepositoryBuilder rb = new RepositoryBuilder() //
+				.setGitDir(dir) //
+				.readEnvironment() //
+				.findGitDir();
+		return rb.getGitDir();
+	}
+
+	public static Repository createRepository(File directory, File gitDir,
+			boolean bare) throws IOException {
+		RepositoryBuilder builder = new RepositoryBuilder();
+		if (bare)
+			builder.setBare();
+		builder.readEnvironment();
+		if (gitDir == null)
+			gitDir = builder.getGitDir();
+		else
+			builder.setGitDir(gitDir);
+		if (directory == null) {
+			if (builder.getGitDir() == null) {
+				String dStr = SystemReader.getInstance()
+						.getProperty("user.dir"); //$NON-NLS-1$
+				if (dStr == null)
+					dStr = "."; //$NON-NLS-1$
+				File d = new File(dStr);
+				if (!bare)
+					d = new File(d, Constants.DOT_GIT);
+				builder.setGitDir(d);
+			} else {
+				// directory was not set but gitDir was set
+				if (!bare) {
+					String dStr = SystemReader.getInstance()
+							.getProperty("user.dir"); //$NON-NLS-1$
+					if (dStr == null)
+						dStr = "."; //$NON-NLS-1$
+					builder.setWorkTree(new File(dStr));
+				}
+			}
+		} else {
+			if (bare)
+				builder.setGitDir(directory);
+			else {
+				builder.setWorkTree(directory);
+				if (gitDir == null)
+					builder.setGitDir(new File(directory, Constants.DOT_GIT));
+			}
+		}
+		return builder.build();
+	}
+
+	public static Repository createRepositoryMustExist(File dir)
+			throws IOException {
+		RepositoryBuilder builder = new RepositoryBuilder();
+		builder.setWorkTree(dir);
+		builder.findGitDir(dir);
+		builder.setMustExist(true);
+		return builder.build();
+	}
+
+	public static Repository createEmptyRepository() throws IOException {
+		return new RepositoryBuilder().build();
+	}
+
+	public static Repository createRepository(File gitdir, File workTree)
+			throws IOException {
+		return new RepositoryBuilder().setGitDir(gitdir).setWorkTree(workTree)
+				.build();
+	}
+
+	public static Repository createGitDirEnvRepository(File file)
+			throws IOException {
+		RepositoryBuilder rb = new RepositoryBuilder() //
+				.setGitDir(file) //
+				.readEnvironment() //
+				.findGitDir();
+		if (rb.getGitDir() == null)
+			throw new IOException();
+		return rb.build();
+	}
+
 	public static Repository createFileRepository(File file)
 			throws IOException {
 		return new RepositoryBuilder().setGitDir(file).setMustExist(true)
@@ -1869,15 +1953,6 @@ public abstract class Repository implements AutoCloseable {
 	public Set<String> getRemoteNames() {
 		return getConfig()
 				.getSubsections(ConfigConstants.CONFIG_REMOTE_SECTION);
-	}
-
-	public static File getGitDir(File dir) {
-		RepositoryBuilder rb = new RepositoryBuilder() //
-				.setGitDir(dir) //
-				.readEnvironment() //
-				.findGitDir();
-		File gitDir = rb.getGitDir();
-		return gitDir;
 	}
 
 }

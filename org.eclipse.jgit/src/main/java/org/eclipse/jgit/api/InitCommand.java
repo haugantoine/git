@@ -50,10 +50,7 @@ import java.util.concurrent.Callable;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.internal.JGitText;
-import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.SystemReader;
 
 /**
  * Create an empty git repository or reinitalize an existing one
@@ -75,44 +72,8 @@ public class InitCommand implements Callable<Git> {
 	 */
 	public Git call() throws GitAPIException {
 		try {
-			RepositoryBuilder builder = new RepositoryBuilder();
-			if (bare)
-				builder.setBare();
-			builder.readEnvironment();
-			if (gitDir == null)
-				gitDir = builder.getGitDir();
-			else
-				builder.setGitDir(gitDir);
-			if (directory == null) {
-				if (builder.getGitDir() == null) {
-					String dStr = SystemReader.getInstance()
-							.getProperty("user.dir"); //$NON-NLS-1$
-					if (dStr == null)
-						dStr = "."; //$NON-NLS-1$
-					File d = new File(dStr);
-					if (!bare)
-						d = new File(d, Constants.DOT_GIT);
-					builder.setGitDir(d);
-				} else {
-					// directory was not set but gitDir was set
-					if (!bare) {
-						String dStr = SystemReader.getInstance()
-								.getProperty("user.dir"); //$NON-NLS-1$
-						if (dStr == null)
-							dStr = "."; //$NON-NLS-1$
-						builder.setWorkTree(new File(dStr));
-					}
-				}
-			} else {
-				if (bare)
-					builder.setGitDir(directory);
-				else {
-					builder.setWorkTree(directory);
-					if (gitDir == null)
-						builder.setGitDir(new File(directory, Constants.DOT_GIT));
-				}
-			}
-			Repository repository = builder.build();
+			Repository repository = Repository.createRepository(directory,
+					gitDir, bare);
 			if (!repository.getObjectDatabase().exists())
 				repository.create(bare);
 			return new Git(repository);

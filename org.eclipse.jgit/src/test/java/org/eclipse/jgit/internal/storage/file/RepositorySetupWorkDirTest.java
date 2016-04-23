@@ -106,8 +106,7 @@ public class RepositorySetupWorkDirTest extends LocalDiskRepositoryTestCase {
 	public void testWorkdirIsDotGit_CreateRepositoryFromWorkDirOnly()
 			throws Exception {
 		File workdir = getFile("workdir", "repo");
-		Repository repo = new RepositoryBuilder().setWorkTree(workdir)
-				.build();
+		Repository repo = Repository.createWorkTreeRepository2(workdir);
 		assertGitdirPath(repo, "workdir", "repo", Constants.DOT_GIT);
 	}
 

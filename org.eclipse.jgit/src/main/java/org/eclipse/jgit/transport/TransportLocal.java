@@ -60,7 +60,6 @@ import org.eclipse.jgit.errors.NoRemoteRepositoryException;
 import org.eclipse.jgit.errors.NotSupportedException;
 import org.eclipse.jgit.errors.TransportException;
 import org.eclipse.jgit.internal.JGitText;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.transport.resolver.ReceivePackFactory;

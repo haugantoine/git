@@ -45,7 +45,6 @@ package org.eclipse.jgit.api;
 
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -62,16 +61,12 @@ import org.eclipse.jgit.dircache.DirCacheBuilder;
 import org.eclipse.jgit.dircache.DirCacheEntry;
 import org.eclipse.jgit.junit.JGitTestUtil;
 import org.eclipse.jgit.junit.RepositoryTestCase;
-import org.eclipse.jgit.lib.ConfigConstants;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -923,108 +918,6 @@ public class AddCommandTest extends RepositoryTestCase {
 					"[z, mode:100644, content:z]",
 					indexState(CONTENT));
 		}
-	}
-
-	@Test
-	public void testExecutableRetention() throws Exception {
-		StoredConfig config = db.getConfig();
-		config.setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null,
-				ConfigConstants.CONFIG_KEY_FILEMODE, true);
-		config.save();
-
-		FS executableFs = new FS() {
-
-			public boolean supportsExecute() {
-				return true;
-			}
-
-			public boolean setExecute(File f, boolean canExec) {
-				return true;
-			}
-
-			public ProcessBuilder runInShell(String cmd, String[] args) {
-				return null;
-			}
-
-			public boolean retryFailedLockFileCommit() {
-				return false;
-			}
-
-			public FS newInstance() {
-				return this;
-			}
-
-			protected File discoverGitExe() {
-				return null;
-			}
-
-			public boolean canExecute(File f) {
-				return true;
-			}
-
-			@Override
-			public boolean isCaseSensitive() {
-				return false;
-			}
-		};
-
-		Git git = Git.open(db.getDirectory(), executableFs);
-		String path = A_TXT_FILE_NAME;
-		writeTrashFile(path, "content");
-		git.add().addFilepattern(path).call();
-		RevCommit commit1 = git.commit().setMessage("commit").call();
-		TreeWalk walk = TreeWalk.forPath(db, path, commit1.getTree());
-		assertNotNull(walk);
-		assertEquals(FileMode.EXECUTABLE_FILE, walk.getFileMode(0));
-
-		FS nonExecutableFs = new FS() {
-
-			public boolean supportsExecute() {
-				return false;
-			}
-
-			public boolean setExecute(File f, boolean canExec) {
-				return false;
-			}
-
-			public ProcessBuilder runInShell(String cmd, String[] args) {
-				return null;
-			}
-
-			public boolean retryFailedLockFileCommit() {
-				return false;
-			}
-
-			public FS newInstance() {
-				return this;
-			}
-
-			protected File discoverGitExe() {
-				return null;
-			}
-
-			public boolean canExecute(File f) {
-				return false;
-			}
-
-			@Override
-			public boolean isCaseSensitive() {
-				return false;
-			}
-		};
-
-		config = db.getConfig();
-		config.setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null,
-				ConfigConstants.CONFIG_KEY_FILEMODE, false);
-		config.save();
-
-		Git git2 = Git.open(db.getDirectory(), nonExecutableFs);
-		writeTrashFile(path, "content2");
-		git2.add().addFilepattern(path).call();
-		RevCommit commit2 = git2.commit().setMessage("commit2").call();
-		walk = TreeWalk.forPath(db, path, commit2.getTree());
-		assertNotNull(walk);
-		assertEquals(FileMode.EXECUTABLE_FILE, walk.getFileMode(0));
 	}
 
 	private static DirCacheEntry addEntryToBuilder(String path, File file,

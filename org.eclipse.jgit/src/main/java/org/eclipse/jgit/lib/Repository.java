@@ -79,6 +79,7 @@ import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.ListenerList;
 import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -105,6 +106,52 @@ import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 public abstract class Repository implements AutoCloseable {
 	private static final ListenerList globalListeners = new ListenerList();
 
+	public static Repository createFileRepository(File file)
+			throws IOException {
+		return new RepositoryBuilder().setGitDir(file).setMustExist(true)
+				.build();
+	}
+
+	public static Repository createGitDirRepository(File dir)
+			throws IOException {
+		return new RepositoryBuilder().setGitDir(dir).build();
+	}
+
+	public static Repository createWorkTreeRepository(File dir)
+			throws IOException {
+		RepositoryBuilder builder = new RepositoryBuilder();
+		builder.setWorkTree(dir);
+		builder.setMustExist(true);
+		return builder.build();
+	}
+
+	public static Repository createWorkTreeRepository2(File worktree)
+			throws IOException {
+		RepositoryBuilder builder = new RepositoryBuilder();
+		builder.setWorkTree(worktree);
+		return builder.build();
+	}
+
+	public static Repository createGitDirRepo(File dir) throws IOException {
+		RepositoryBuilder rb = new RepositoryBuilder();
+		if (RepositoryCache.FileKey.isGitRepository(dir, FS.DETECTED))
+			rb.setGitDir(dir);
+		else
+			rb.findGitDir(dir);
+
+		return rb.build();
+	}
+
+	public static FileRepository createRepository(File indexFile, File objDir,
+			File altObjDir, File theDir) throws IOException {
+		FileRepository r = (FileRepository) new RepositoryBuilder() //
+				.setGitDir(theDir).setObjectDirectory(objDir) //
+				.addAlternateObjectDirectory(altObjDir) //
+				.setIndexFile(indexFile) //
+				.build();
+		return r;
+	}
+
 	/** @return the global listener list observing all events in this JVM. */
 	public static ListenerList getGlobalListenerList() {
 		return globalListeners;
@@ -114,9 +161,6 @@ public abstract class Repository implements AutoCloseable {
 
 	/** Metadata directory holding the repository's critical files. */
 	private final File gitDir;
-
-	/** File abstraction used to resolve paths. */
-	private final FS fs;
 
 	private final ListenerList myListeners = new ListenerList();
 
@@ -132,9 +176,20 @@ public abstract class Repository implements AutoCloseable {
 	 * @param options
 	 *            options to configure the repository.
 	 */
+	protected Repository() {
+		gitDir = null;
+		workTree = null;
+		indexFile = null;
+	}
+
+	/**
+	 * Initialize a new repository instance.
+	 *
+	 * @param options
+	 *            options to configure the repository.
+	 */
 	protected Repository(final RepositoryBuilder options) {
 		gitDir = options.getGitDir();
-		fs = options.getFS();
 		workTree = options.getWorkTree();
 		indexFile = options.getIndexFile();
 	}
@@ -253,7 +308,7 @@ public abstract class Repository implements AutoCloseable {
 	 * directory can never be null.
 	 */
 	public FS getFS() {
-		return fs;
+		return FS.DETECTED;
 	}
 
 	/**
@@ -1815,4 +1870,14 @@ public abstract class Repository implements AutoCloseable {
 		return getConfig()
 				.getSubsections(ConfigConstants.CONFIG_REMOTE_SECTION);
 	}
+
+	public static File getGitDir(File dir) {
+		RepositoryBuilder rb = new RepositoryBuilder() //
+				.setGitDir(dir) //
+				.readEnvironment() //
+				.findGitDir();
+		File gitDir = rb.getGitDir();
+		return gitDir;
+	}
+
 }

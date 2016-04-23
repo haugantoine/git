@@ -68,7 +68,6 @@ import org.eclipse.jgit.errors.NoWorkTreeException;
 import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.junit.RepositoryTestCase;
 import org.eclipse.jgit.junit.TestRepository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
@@ -157,9 +156,9 @@ public class SubmoduleWalkTest extends RepositoryTestCase {
 				+ File.separatorChar + path);
 		new FileWriter(dotGit).append(
 				"gitdir: " + modulesGitDir.getAbsolutePath()).close();
-		RepositoryBuilder builder = new RepositoryBuilder();
-		builder.setWorkTree(new File(db.getWorkTree(), path));
-		builder.build().create();
+		Repository rep = Repository
+				.createWorkTreeRepository2(new File(db.getWorkTree(), path));
+		rep.create();
 
 		DirCache cache = db.lockDirCache();
 		DirCacheEditor editor = cache.editor();
@@ -209,9 +208,9 @@ public class SubmoduleWalkTest extends RepositoryTestCase {
 		new FileWriter(dotGit).append(
 				"gitdir: " + "../" + Constants.DOT_GIT + "/modules/" + path)
 				.close();
-		RepositoryBuilder builder = new RepositoryBuilder();
-		builder.setWorkTree(new File(db.getWorkTree(), path));
-		builder.build().create();
+		Repository rep = Repository
+				.createWorkTreeRepository2(new File(db.getWorkTree(), path));
+		rep.create();
 
 		DirCache cache = db.lockDirCache();
 		DirCacheEditor editor = cache.editor();

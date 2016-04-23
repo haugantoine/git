@@ -85,7 +85,7 @@ import org.eclipse.jgit.util.SystemReader;
  * @see RepositoryBuilder
  * @see FileRepositoryBuilder
  */
-public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository> {
+public class RepositoryBuilder {
 	private static boolean isSymRef(byte[] ref) {
 		if (ref.length < 9)
 			return false;
@@ -123,8 +123,6 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 			return new File(workTree, gitdirPath).getCanonicalFile();
 	}
 
-	private FS fs;
-
 	private File gitDir;
 
 	private File objectDirectory;
@@ -148,23 +146,6 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	private Config config;
 
 	/**
-	 * Set the file system abstraction needed by this repository.
-	 *
-	 * @param fs
-	 *            the abstraction.
-	 * @return {@code this} (for chaining calls).
-	 */
-	public B setFS(FS fs) {
-		this.fs = fs;
-		return self();
-	}
-
-	/** @return the file system abstraction, or null if not set. */
-	public FS getFS() {
-		return fs;
-	}
-
-	/**
 	 * Set the Git directory storing the repository metadata.
 	 * <p>
 	 * The meta directory stores the objects, references, and meta files like
@@ -175,10 +156,10 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            {@code GIT_DIR}, the repository meta directory.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B setGitDir(File gitDir) {
+	public RepositoryBuilder setGitDir(File gitDir) {
 		this.gitDir = gitDir;
 		this.config = null;
-		return self();
+		return this;
 	}
 
 	/** @return the meta data directory; null if not set. */
@@ -194,9 +175,9 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            repository's object files are stored.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B setObjectDirectory(File objectDirectory) {
+	public RepositoryBuilder setObjectDirectory(File objectDirectory) {
 		this.objectDirectory = objectDirectory;
-		return self();
+		return this;
 	}
 
 	/** @return the object directory; null if not set. */
@@ -214,13 +195,13 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            another objects directory to search after the standard one.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B addAlternateObjectDirectory(File other) {
+	public RepositoryBuilder addAlternateObjectDirectory(File other) {
 		if (other != null) {
 			if (alternateObjectDirectories == null)
 				alternateObjectDirectories = new LinkedList<File>();
 			alternateObjectDirectories.add(other);
 		}
-		return self();
+		return this;
 	}
 
 	/**
@@ -234,12 +215,13 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            collection's contents is copied to an internal list.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B addAlternateObjectDirectories(Collection<File> inList) {
+	public RepositoryBuilder addAlternateObjectDirectories(
+			Collection<File> inList) {
 		if (inList != null) {
 			for (File path : inList)
 				addAlternateObjectDirectory(path);
 		}
-		return self();
+		return this;
 	}
 
 	/** @return ordered array of alternate directories; null if non were set. */
@@ -258,11 +240,11 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B setBare() {
+	public RepositoryBuilder setBare() {
 		setIndexFile(null);
 		setWorkTree(null);
 		bare = true;
-		return self();
+		return this;
 	}
 
 	/**
@@ -280,14 +262,9 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            after being built.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B setMustExist(boolean mustExist) {
+	public RepositoryBuilder setMustExist(boolean mustExist) {
 		this.mustExist = mustExist;
-		return self();
-	}
-
-	/** @return true if the repository must exist before being opened. */
-	public boolean isMustExist() {
-		return mustExist;
+		return this;
 	}
 
 	/**
@@ -297,9 +274,9 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            {@code GIT_WORK_TREE}, the working directory of the checkout.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B setWorkTree(File workTree) {
+	public RepositoryBuilder setWorkTree(File workTree) {
 		this.workTree = workTree;
-		return self();
+		return this;
 	}
 
 	/** @return the work tree directory, or null if not set. */
@@ -318,9 +295,9 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            {@code GIT_INDEX_FILE}, the index file location.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B setIndexFile(File indexFile) {
+	public RepositoryBuilder setIndexFile(File indexFile) {
 		this.indexFile = indexFile;
-		return self();
+		return this;
 	}
 
 	/** @return the index file location, or null if not set. */
@@ -338,7 +315,7 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B readEnvironment() {
+	public RepositoryBuilder readEnvironment() {
 		return readEnvironment(SystemReader.getInstance());
 	}
 
@@ -354,7 +331,7 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            the SystemReader abstraction to access the environment.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B readEnvironment(SystemReader sr) {
+	public RepositoryBuilder readEnvironment(SystemReader sr) {
 		if (getGitDir() == null) {
 			String val = sr.getenv(GIT_DIR_KEY);
 			if (val != null)
@@ -395,7 +372,7 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 			}
 		}
 
-		return self();
+		return this;
 	}
 
 	/**
@@ -408,13 +385,13 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            a path to stop searching at; its parent will not be searched.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B addCeilingDirectory(File root) {
+	public RepositoryBuilder addCeilingDirectory(File root) {
 		if (root != null) {
 			if (ceilingDirectories == null)
 				ceilingDirectories = new LinkedList<File>();
 			ceilingDirectories.add(root);
 		}
-		return self();
+		return this;
 	}
 
 	/**
@@ -428,12 +405,12 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            contents is copied to an internal list.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B addCeilingDirectories(Collection<File> inList) {
+	public RepositoryBuilder addCeilingDirectories(Collection<File> inList) {
 		if (inList != null) {
 			for (File path : inList)
 				addCeilingDirectory(path);
 		}
-		return self();
+		return this;
 	}
 
 	/**
@@ -447,12 +424,12 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            copied to an internal list.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B addCeilingDirectories(File[] inList) {
+	public RepositoryBuilder addCeilingDirectories(File[] inList) {
 		if (inList != null) {
 			for (File path : inList)
 				addCeilingDirectory(path);
 		}
-		return self();
+		return this;
 	}
 
 	/**
@@ -468,10 +445,10 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B findGitDir() {
+	public RepositoryBuilder findGitDir() {
 		if (getGitDir() == null)
 			findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
-		return self();
+		return this;
 	}
 
 	/**
@@ -489,7 +466,7 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *            directory to begin searching in.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public B findGitDir(File current) {
+	public RepositoryBuilder findGitDir(File current) {
 		if (getGitDir() == null) {
 			FS tryFS = safeFS();
 			while (current != null) {
@@ -515,7 +492,7 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 					break;
 			}
 		}
-		return self();
+		return this;
 	}
 
 	/**
@@ -533,12 +510,13 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *             the repository could not be accessed to configure the rest of
 	 *             the builder's parameters.
 	 */
-	public B setup() throws IllegalArgumentException, IOException {
+	public RepositoryBuilder setup()
+			throws IllegalArgumentException, IOException {
 		requireGitDirOrWorkTree();
 		setupGitDir();
 		setupWorkTree();
 		setupInternals();
-		return self();
+		return this;
 	}
 
 	/**
@@ -557,10 +535,9 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *             the repository could not be accessed to configure the rest of
 	 *             the builder's parameters.
 	 */
-	@SuppressWarnings({ "unchecked", "resource" })
-	public R build() throws IOException {
-		R repo = (R) new FileRepository(setup());
-		if (isMustExist() && !repo.getObjectDatabase().exists())
+	public Repository build() throws IOException {
+		Repository repo = new FileRepository(setup());
+		if (mustExist && !repo.getObjectDatabase().exists())
 			throw new RepositoryNotFoundException(getGitDir());
 		return repo;
 	}
@@ -601,8 +578,6 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 	 *             the repository configuration could not be read.
 	 */
 	protected void setupWorkTree() throws IOException {
-		if (getFS() == null)
-			setFS(FS.DETECTED);
 
 		// If we aren't bare, we should have a work tree.
 		//
@@ -711,12 +686,6 @@ public class RepositoryBuilder<B extends RepositoryBuilder, R extends Repository
 
 	/** @return the configured FS, or {@link FS#DETECTED}. */
 	protected FS safeFS() {
-		return getFS() != null ? getFS() : FS.DETECTED;
-	}
-
-	/** @return {@code this} */
-	@SuppressWarnings("unchecked")
-	protected final B self() {
-		return (B) this;
+		return FS.DETECTED;
 	}
 }

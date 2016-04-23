@@ -77,7 +77,6 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.lib.SymbolicRef;
 import org.eclipse.jgit.lib.Ref.Storage;
@@ -109,7 +108,7 @@ public class DfsRepository extends Repository {
 	 * @since 2.0
 	 */
 	public DfsRepository(DfsRepositoryDescription repoDesc) {
-		super(new RepositoryBuilder());
+		super();
 		this.config = new DfsConfig();
 		this.description = repoDesc;
 		objdb = new MemObjDatabase(this);

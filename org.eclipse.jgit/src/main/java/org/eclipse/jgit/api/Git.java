@@ -96,26 +96,10 @@ public class Git implements AutoCloseable {
 	 * @throws IOException
 	 */
 	public static Git open(File dir) throws IOException {
-		return open(dir, FS.DETECTED);
-	}
-
-	/**
-	 * @param dir
-	 *            the repository to open. May be either the GIT_DIR, or the
-	 *            working tree directory that contains {@code .git}.
-	 * @param fs
-	 *            filesystem abstraction to use when accessing the repository.
-	 * @return a {@link Git} object for the existing git repository. Closing this
-	 *         instance will close the repo.
-	 * @throws IOException
-	 */
-	public static Git open(File dir, FS fs) throws IOException {
 		RepositoryCache.FileKey key;
 
-		key = RepositoryCache.FileKey.lenient(dir, fs);
-		Repository db = new RepositoryBuilder().setFS(fs)
-				.setGitDir(key.getFile())
-				.setMustExist(true).build();
+		key = RepositoryCache.FileKey.lenient(dir, FS.DETECTED);
+		Repository db = Repository.createFileRepository(key.getFile());
 		return new Git(db, true);
 	}
 

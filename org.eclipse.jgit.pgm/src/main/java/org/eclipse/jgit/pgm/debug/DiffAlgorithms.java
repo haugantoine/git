@@ -62,14 +62,12 @@ import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.errors.LargeObjectException;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.MutableObjectId;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.pgm.Command;
 import org.eclipse.jgit.pgm.TextBuiltin;
 import org.eclipse.jgit.pgm.internal.CLIText;
@@ -77,7 +75,6 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.TreeFilter;
-import org.eclipse.jgit.util.FS;
 import org.kohsuke.args4j.Option;
 
 @Command(usage = "usage_DiffAlgorithms")
@@ -139,23 +136,14 @@ class DiffAlgorithms extends TextBuiltin {
 			throw die("Current thread CPU time not supported on this JRE"); //$NON-NLS-1$
 
 		if (gitDirs.isEmpty()) {
-			RepositoryBuilder rb = new RepositoryBuilder() //
-					.setGitDir(new File(gitdir)) //
-					.readEnvironment() //
-					.findGitDir();
-			if (rb.getGitDir() == null)
+			File gitDir = Repository.getGitDir(new File(gitdir));
+			if (gitDir == null)
 				throw die(CLIText.get().cantFindGitDirectory);
-			gitDirs.add(rb.getGitDir());
+			gitDirs.add(gitDir);
 		}
 
 		for (File dir : gitDirs) {
-			RepositoryBuilder rb = new RepositoryBuilder();
-			if (RepositoryCache.FileKey.isGitRepository(dir, FS.DETECTED))
-				rb.setGitDir(dir);
-			else
-				rb.findGitDir(dir);
-
-			Repository db = rb.build();
+			Repository db = Repository.createGitDirRepo(dir);
 			try {
 				run(db);
 			} finally {

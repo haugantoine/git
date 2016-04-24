@@ -55,7 +55,6 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
-import org.eclipse.jgit.util.FS;
 
 /**
  * Default resolver serving from the local filesystem.
@@ -103,12 +102,12 @@ public class FileResolver<C> implements RepositoryResolver<C> {
 		}
 
 		for (File base : exportBase) {
-			File dir = FileKey.resolve(new File(base, name), FS.DETECTED);
+			File dir = FileKey.resolve(new File(base, name));
 			if (dir == null)
 				continue;
 
 			try {
-				FileKey key = FileKey.exact(dir, FS.DETECTED);
+				FileKey key = FileKey.exact(dir);
 				db = RepositoryCache.open(key, true);
 			} catch (IOException e) {
 				throw new RepositoryNotFoundException(name, e);

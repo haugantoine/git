@@ -612,7 +612,7 @@ public class CloneCommandTest extends RepositoryTestCase {
 						ConfigConstants.CONFIG_KEY_REBASE, false));
 
 		FileBasedConfig userConfig = SystemReader.getInstance().openUserConfig(
-				null, git.getRepository().getFS());
+				null);
 		userConfig.setString(ConfigConstants.CONFIG_BRANCH_SECTION, null,
 				ConfigConstants.CONFIG_KEY_AUTOSETUPREBASE,
 				ConfigConstants.CONFIG_KEY_ALWAYS);

@@ -93,8 +93,8 @@ public abstract class SystemReader {
 			return System.getProperty(key);
 		}
 
-		public FileBasedConfig openSystemConfig(Config parent, FS fs) {
-			File configFile = fs.getGitSystemConfig();
+		public FileBasedConfig openSystemConfig(Config parent) {
+			File configFile = FS.DETECTED.getGitSystemConfig();
 			if (configFile == null) {
 				return new FileBasedConfig(null) {
 					public void load() {
@@ -110,8 +110,8 @@ public abstract class SystemReader {
 			return new FileBasedConfig(parent, configFile);
 		}
 
-		public FileBasedConfig openUserConfig(Config parent, FS fs) {
-			final File home = fs.userHome();
+		public FileBasedConfig openUserConfig(Config parent) {
+			final File home = FS.DETECTED.userHome();
 			return new FileBasedConfig(parent, new File(home, ".gitconfig")); //$NON-NLS-1$
 		}
 
@@ -211,7 +211,7 @@ public abstract class SystemReader {
 	 *            certain file system operations.
 	 * @return the git configuration found in the user home
 	 */
-	public abstract FileBasedConfig openUserConfig(Config parent, FS fs);
+	public abstract FileBasedConfig openUserConfig(Config parent);
 
 	/**
 	 * @param parent
@@ -223,7 +223,7 @@ public abstract class SystemReader {
 	 * @return the gitonfig configuration found in the system-wide "etc"
 	 *         directory
 	 */
-	public abstract FileBasedConfig openSystemConfig(Config parent, FS fs);
+	public abstract FileBasedConfig openSystemConfig(Config parent);
 
 	/**
 	 * @return the current system time

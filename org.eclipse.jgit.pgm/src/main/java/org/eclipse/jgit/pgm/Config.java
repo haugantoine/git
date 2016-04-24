@@ -78,7 +78,6 @@ class Config extends TextBuiltin {
 	}
 
 	private void list() throws IOException, ConfigInvalidException {
-		final FS fs = getRepository().getFS();
 		if (configFile != null) {
 			list(new FileBasedConfig(configFile));
 			return;
@@ -87,11 +86,11 @@ class Config extends TextBuiltin {
 				|| (isListAll() && StringUtils.isEmptyOrNull(SystemReader
 						.getInstance()
 						.getenv(Constants.GIT_CONFIG_NOSYSTEM_KEY))))
-			list(SystemReader.getInstance().openSystemConfig(null, fs));
+			list(SystemReader.getInstance().openSystemConfig(null));
 		if (global || isListAll())
-			list(SystemReader.getInstance().openUserConfig(null, fs));
+			list(SystemReader.getInstance().openUserConfig(null));
 		if (local || isListAll())
-			list(new FileBasedConfig(fs.resolve(getRepository().getDirectory(),
+			list(new FileBasedConfig(FS.DETECTED.resolve(getRepository().getDirectory(),
 					Constants.CONFIG)));
 	}
 

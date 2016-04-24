@@ -97,16 +97,15 @@ public abstract class FS {
 		 * @return FS instance
 		 */
 		public FS detect(Boolean cygwinUsed) {
-			if (SystemReader.getInstance().isWindows()) {
-				if (cygwinUsed == null)
-					cygwinUsed = Boolean.valueOf(FS_Win32_Cygwin.isCygwin());
-				if (cygwinUsed.booleanValue())
-					return new FS_Win32_Cygwin();
-				else
-					return new FS_Win32();
-			} else {
+			if (!SystemReader.getInstance().isWindows()) {
 				return new FS_POSIX();
 			}
+			if (cygwinUsed == null)
+				cygwinUsed = Boolean.valueOf(FS_Win32_Cygwin.isCygwin());
+			if (cygwinUsed.booleanValue())
+				return new FS_Win32_Cygwin();
+			else
+				return new FS_Win32();
 		}
 	}
 
@@ -159,7 +158,10 @@ public abstract class FS {
 
 	private final static Logger LOG = LoggerFactory.getLogger(FS.class);
 
-	/** The auto-detected implementation selected for this operating system and JRE. */
+	/**
+	 * The auto-detected implementation selected for this operating system and
+	 * JRE.
+	 */
 	public static final FS DETECTED = detect();
 
 	private static FSFactory factory;
@@ -258,9 +260,9 @@ public abstract class FS {
 	 * Not all platforms and JREs support executable flags on files. If the
 	 * feature is unsupported this method will always return false.
 	 * <p>
-	 * <em>If the platform supports symbolic links and <code>f</code> is a symbolic link
-	 * this method returns false, rather than the state of the executable flags
-	 * on the target file.</em>
+	 * <em>If the platform supports symbolic links and <code>f</code> is a
+	 * symbolic link this method returns false, rather than the state of the
+	 * executable flags on the target file.</em>
 	 *
 	 * @param f
 	 *            abstract path to test.
@@ -372,12 +374,10 @@ public abstract class FS {
 	 * @return the user's home directory; null if the user does not have one.
 	 */
 	public File userHome() {
-		Holder<File> p = userHome;
-		if (p == null) {
-			p = new Holder<File>(userHomeImpl());
-			userHome = p;
+		if (userHome == null) {
+			userHome = new Holder<File>(userHomeImpl());
 		}
-		return p.value;
+		return userHome.value;
 	}
 
 	/**
@@ -428,7 +428,8 @@ public abstract class FS {
 	 * @return the first match found, or null
 	 * @since 3.0
 	 **/
-	protected static File searchPath(final String path, final String... lookFor) {
+	protected static File searchPath(final String path,
+			final String... lookFor) {
 		if (path == null)
 			return null;
 
@@ -455,7 +456,8 @@ public abstract class FS {
 	 *         none
 	 */
 	@Nullable
-	protected static String readPipe(File dir, String[] command, String encoding) {
+	protected static String readPipe(File dir, String[] command,
+			String encoding) {
 		return readPipe(dir, command, encoding, null);
 	}
 
@@ -476,7 +478,8 @@ public abstract class FS {
 	 * @since 4.0
 	 */
 	@Nullable
-	protected static String readPipe(File dir, String[] command, String encoding, Map<String, String> env) {
+	protected static String readPipe(File dir, String[] command,
+			String encoding, Map<String, String> env) {
 		final boolean debug = LOG.isDebugEnabled();
 		try {
 			if (debug) {
@@ -532,8 +535,11 @@ public abstract class FS {
 
 	private static class GobblerThread extends Thread {
 		private final Process p;
+
 		private final String desc;
+
 		private final String dir;
+
 		final AtomicBoolean fail = new AtomicBoolean();
 
 		GobblerThread(Process p, String[] command, File dir) {
@@ -565,7 +571,8 @@ public abstract class FS {
 
 		private void logError(Throwable t) {
 			String msg = MessageFormat.format(
-					JGitText.get().exceptionCaughtDuringExcecutionOfCommand, desc, dir);
+					JGitText.get().exceptionCaughtDuringExcecutionOfCommand,
+					desc, dir);
 			LOG.error(msg, t);
 		}
 	}
@@ -612,8 +619,8 @@ public abstract class FS {
 	}
 
 	/**
-	 * @return the currently used path to the system-wide Git configuration
-	 *         file or {@code null} if none has been set.
+	 * @return the currently used path to the system-wide Git configuration file
+	 *         or {@code null} if none has been set.
 	 * @since 4.0
 	 */
 	public File getGitSystemConfig() {
@@ -669,7 +676,7 @@ public abstract class FS {
 	 * @throws IOException
 	 * @since 3.0
 	 */
-	public boolean isSymLink(File path) throws IOException {
+	public boolean isSymLink(File path) {
 		return FileUtils.isSymlink(path);
 	}
 
@@ -784,10 +791,9 @@ public abstract class FS {
 	 * @since 4.0
 	 */
 	public ProcessResult runHookIfPresent(Repository repository,
-			final String hookName,
-			String[] args) throws JGitInternalException {
-		return runHookIfPresent(repository, hookName, args, System.out, System.err,
-				null);
+			final String hookName, String[] args) throws JGitInternalException {
+		return runHookIfPresent(repository, hookName, args, System.out,
+				System.err, null);
 	}
 
 	/**
@@ -819,9 +825,9 @@ public abstract class FS {
 	 * @since 4.0
 	 */
 	public ProcessResult runHookIfPresent(Repository repository,
-			final String hookName,
-			String[] args, PrintStream outRedirect, PrintStream errRedirect,
-			String stdinArgs) throws JGitInternalException {
+			final String hookName, String[] args, PrintStream outRedirect,
+			PrintStream errRedirect, String stdinArgs)
+			throws JGitInternalException {
 		return new ProcessResult(Status.NOT_SUPPORTED);
 	}
 
@@ -868,8 +874,7 @@ public abstract class FS {
 			runDirectory = repository.getDirectory();
 		else
 			runDirectory = repository.getWorkTree();
-		final String cmd = relativize(runDirectory.getAbsolutePath(),
-				hookPath);
+		final String cmd = relativize(runDirectory.getAbsolutePath(), hookPath);
 		ProcessBuilder hookProcess = runInShell(cmd, args);
 		hookProcess.directory(runDirectory);
 		try {
@@ -881,11 +886,10 @@ public abstract class FS {
 					hookName), e);
 		} catch (InterruptedException e) {
 			throw new JGitInternalException(MessageFormat.format(
-					JGitText.get().exceptionHookExecutionInterrupted,
-							hookName), e);
+					JGitText.get().exceptionHookExecutionInterrupted, hookName),
+					e);
 		}
 	}
-
 
 	/**
 	 * Tries to find a hook matching the given one in the given repository.
@@ -902,8 +906,8 @@ public abstract class FS {
 		File gitDir = repository.getDirectory();
 		if (gitDir == null)
 			return null;
-		final File hookFile = new File(new File(gitDir,
-				Constants.HOOKS), hookName);
+		final File hookFile = new File(new File(gitDir, Constants.HOOKS),
+				hookName);
 		return hookFile.isFile() ? hookFile : null;
 	}
 
@@ -933,10 +937,11 @@ public abstract class FS {
 	 * @since 4.2
 	 */
 	public int runProcess(ProcessBuilder processBuilder,
-			OutputStream outRedirect, OutputStream errRedirect, String stdinArgs)
-			throws IOException, InterruptedException {
-		InputStream in = (stdinArgs == null) ? null : new ByteArrayInputStream(
-				stdinArgs.getBytes(Constants.CHARACTER_ENCODING));
+			OutputStream outRedirect, OutputStream errRedirect,
+			String stdinArgs) throws IOException, InterruptedException {
+		InputStream in = (stdinArgs == null) ? null
+				: new ByteArrayInputStream(
+						stdinArgs.getBytes(Constants.CHARACTER_ENCODING));
 		return runProcess(processBuilder, outRedirect, errRedirect, in);
 	}
 
@@ -970,8 +975,7 @@ public abstract class FS {
 	 */
 	public int runProcess(ProcessBuilder processBuilder,
 			OutputStream outRedirect, OutputStream errRedirect,
-			InputStream inRedirect) throws IOException,
-			InterruptedException {
+			InputStream inRedirect) throws IOException, InterruptedException {
 		final ExecutorService executor = Executors.newFixedThreadPool(2);
 		Process process = null;
 		// We'll record the first I/O exception that occurs, but keep on trying
@@ -987,8 +991,7 @@ public abstract class FS {
 			executor.submit(outputGobbler);
 			OutputStream outputStream = process.getOutputStream();
 			if (inRedirect != null) {
-				new StreamGobbler(inRedirect, outputStream)
-						.call();
+				new StreamGobbler(inRedirect, outputStream).call();
 			}
 			outputStream.close();
 			return process.waitFor();
@@ -1190,8 +1193,8 @@ public abstract class FS {
 
 		Attributes(FS fs, File file, boolean exists, boolean isDirectory,
 				boolean isExecutable, boolean isSymbolicLink,
-				boolean isRegularFile, long creationTime,
-				long lastModifiedTime, long length) {
+				boolean isRegularFile, long creationTime, long lastModifiedTime,
+				long length) {
 			this.fs = fs;
 			this.file = file;
 			this.exists = exists;

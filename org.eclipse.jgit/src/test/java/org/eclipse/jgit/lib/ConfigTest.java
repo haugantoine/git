@@ -66,7 +66,6 @@ import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.merge.MergeConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 import org.junit.After;
 import org.junit.Test;
@@ -144,8 +143,7 @@ public class ConfigTest {
 		final MockSystemReader mockSystemReader = new MockSystemReader();
 		SystemReader.setInstance(mockSystemReader);
 		final String hostname = mockSystemReader.getHostname();
-		final Config userGitConfig = mockSystemReader.openUserConfig(null,
-				FS.DETECTED);
+		final Config userGitConfig = mockSystemReader.openUserConfig(null);
 		final Config localConfig = new Config(userGitConfig);
 		mockSystemReader.clearProperties();
 
@@ -233,7 +231,7 @@ public class ConfigTest {
 	public void testReadUserConfigWithInvalidCharactersStripped() {
 		final MockSystemReader mockSystemReader = new MockSystemReader();
 		final Config localConfig = new Config(mockSystemReader.openUserConfig(
-				null, FS.DETECTED));
+				null));
 
 		localConfig.setString("user", null, "name", "foo<bar");
 		localConfig.setString("user", null, "email", "baz>\nqux@example.com");

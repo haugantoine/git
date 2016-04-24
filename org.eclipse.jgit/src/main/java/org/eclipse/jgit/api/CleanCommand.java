@@ -100,12 +100,11 @@ public class CleanCommand extends GitCommand<Set<String>> {
 			Set<String> untrackedAndIgnoredDirs = new TreeSet<String>(
 					status.getUntrackedFolders());
 
-			FS fs = getRepository().getFS();
 			for (String p : status.getIgnoredNotInIndex()) {
 				File f = new File(repo.getWorkTree(), p);
-				if (fs.isFile(f) || fs.isSymLink(f))
+				if (FS.DETECTED.isFile(f) || FS.DETECTED.isSymLink(f))
 					untrackedAndIgnoredFiles.add(p);
-				else if (fs.isDirectory(f))
+				else if (FS.DETECTED.isDirectory(f))
 					untrackedAndIgnoredDirs.add(p);
 			}
 

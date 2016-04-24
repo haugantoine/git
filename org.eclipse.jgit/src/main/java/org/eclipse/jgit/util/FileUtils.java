@@ -142,11 +142,10 @@ public class FileUtils {
 	 *             exception is not thrown when IGNORE_ERRORS is set.
 	 */
 	public static void delete(final File f, int options) throws IOException {
-		FS fs = FS.DETECTED;
-		if ((options & SKIP_MISSING) != 0 && !fs.exists(f))
+		if ((options & SKIP_MISSING) != 0 && !FS.DETECTED.exists(f))
 			return;
 
-		if ((options & RECURSIVE) != 0 && fs.isDirectory(f)) {
+		if ((options & RECURSIVE) != 0 && FS.DETECTED.isDirectory(f)) {
 			final File[] items = f.listFiles();
 			if (items != null) {
 				List<File> files = new ArrayList<File>();
@@ -181,7 +180,7 @@ public class FileUtils {
 		}
 
 		if (delete && !f.delete()) {
-			if ((options & RETRY) != 0 && fs.exists(f)) {
+			if ((options & RETRY) != 0 && FS.DETECTED.exists(f)) {
 				for (int i = 1; i < 10; i++) {
 					try {
 						Thread.sleep(100);

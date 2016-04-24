@@ -120,7 +120,7 @@ public abstract class SshTransport extends TcpTransport {
 
 	/**
 	 * Get the default SSH session
-	 * 
+	 *
 	 * @return a remote session
 	 * @throws TransportException
 	 *             in case of error with opening SSH session
@@ -131,7 +131,7 @@ public abstract class SshTransport extends TcpTransport {
 
 		final int tms = getTimeout() > 0 ? getTimeout() * 1000 : 0;
 
-		final FS fs = local == null ? FS.detect() : local.getFS();
+		final FS fs = local == null ? FS.detect() : FS.DETECTED;
 
 		sock = sch
 				.getSession(uri, getCredentialsProvider(), fs, tms);

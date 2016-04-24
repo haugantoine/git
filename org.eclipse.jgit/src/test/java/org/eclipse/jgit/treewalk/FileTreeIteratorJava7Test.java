@@ -68,10 +68,9 @@ public class FileTreeIteratorJava7Test extends RepositoryTestCase {
 	@Test
 	public void testFileModeSymLinkIsNotATree() throws IOException {
 		org.junit.Assume.assumeTrue(FS.DETECTED.supportsSymlinks());
-		FS fs = db.getFS();
 		// mål = target in swedish, just to get som unicode in here
 		writeTrashFile("mål/data", "targetdata");
-		fs.createSymLink(new File(trash, "länk"), "mål");
+		FS.DETECTED.createSymLink(new File(trash, "länk"), "mål");
 		FileTreeIterator fti = new FileTreeIterator(db);
 		assertFalse(fti.eof());
 		assertEquals("länk", fti.getEntryPathString());

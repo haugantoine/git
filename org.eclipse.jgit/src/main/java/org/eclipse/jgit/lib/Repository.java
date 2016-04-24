@@ -121,15 +121,50 @@ import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 public abstract class Repository implements AutoCloseable {
 	private static final ListenerList globalListeners = new ListenerList();
 
+	private static boolean isSymRef(byte[] ref) {
+		return ref.length >= 9 //
+				&& ref[0] == 'g' //
+				&& ref[1] == 'i' //
+				&& ref[2] == 't' //
+				&& ref[3] == 'd' //
+				&& ref[4] == 'i' //
+				&& ref[5] == 'r' //
+				&& ref[6] == ':' //
+				&& ref[7] == ' ';
+	}
+
+	private static File getSymRef(File workTree, File dotGit)
+			throws IOException {
+		byte[] content = IO.readFully(dotGit);
+		if (!isSymRef(content))
+			throw new IOException(MessageFormat.format(
+					JGitText.get().invalidGitdirRef, dotGit.getAbsolutePath()));
+
+		int pathStart = 8;
+		int lineEnd = RawParseUtils.nextLF(content, pathStart);
+		while (content[lineEnd - 1] == '\n' || (content[lineEnd - 1] == '\r'
+				&& SystemReader.getInstance().isWindows()))
+			lineEnd--;
+		if (lineEnd == pathStart)
+			throw new IOException(MessageFormat.format(
+					JGitText.get().invalidGitdirRef, dotGit.getAbsolutePath()));
+
+		String gitdirPath = RawParseUtils.decode(content, pathStart, lineEnd);
+		File gitdirFile = FS.DETECTED.resolve(workTree, gitdirPath);
+		if (gitdirFile.isAbsolute())
+			return gitdirFile;
+		return new File(workTree, gitdirPath).getCanonicalFile();
+	}
+
 	public static File getAutomagicallyDetectGitDirectory(File d) {
 		return new RepositoryBuilder().findGitDir(d).getGitDir();
 	}
 
 	public static File getGitDir(File dir) {
-		RepositoryBuilder rb = new RepositoryBuilder() //
-				.setGitDir(dir) //
-				.readEnvironment() //
-				.findGitDir();
+		RepositoryBuilder rb = new RepositoryBuilder(); //
+		rb.setGitDir(dir);
+		rb.readEnvironment(SystemReader.getInstance()); //
+		rb.findGitDir();
 		return rb.getGitDir();
 	}
 
@@ -233,7 +268,7 @@ public abstract class Repository implements AutoCloseable {
 
 	public static Repository createGitDirRepo(File dir) throws IOException {
 		RepositoryBuilder rb = new RepositoryBuilder();
-		if (RepositoryCache.FileKey.isGitRepository(dir, FS.DETECTED))
+		if (RepositoryCache.FileKey.isGitRepository(dir))
 			rb.setGitDir(dir);
 		else
 			rb.findGitDir(dir);
@@ -244,7 +279,8 @@ public abstract class Repository implements AutoCloseable {
 	public static FileRepository createRepository(File indexFile, File objDir,
 			File altObjDir, File theDir) throws IOException {
 		FileRepository r = (FileRepository) new RepositoryBuilder() //
-				.setGitDir(theDir).setObjectDirectory(objDir) //
+				.setGitDir(theDir)//
+				.setObjectDirectory(objDir) //
 				.addAlternateObjectDirectory(altObjDir) //
 				.setIndexFile(indexFile) //
 				.build();
@@ -394,21 +430,6 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	@NonNull
 	public abstract AttributesNodeProvider createAttributesNodeProvider();
-
-	/**
-	 * @return the used file system abstraction, or or {@code null} if
-	 *         repository isn't local.
-	 */
-	/*
-	 * TODO This method should be annotated as Nullable, because in some
-	 * specific configurations metadata is not located in the local file system
-	 * (for example in memory databases). In "usual" repositories this
-	 * annotation would only cause compiler errors at places where the actual
-	 * directory can never be null.
-	 */
-	public FS getFS() {
-		return FS.DETECTED;
-	}
 
 	/**
 	 * @param objectId
@@ -1984,46 +2005,6 @@ public abstract class Repository implements AutoCloseable {
 	 * @see FileRepositoryBuilder
 	 */
 	public static class RepositoryBuilder {
-		private static boolean isSymRef(byte[] ref) {
-			if (ref.length < 9)
-				return false;
-			return /**/ref[0] == 'g' //
-					&& ref[1] == 'i' //
-					&& ref[2] == 't' //
-					&& ref[3] == 'd' //
-					&& ref[4] == 'i' //
-					&& ref[5] == 'r' //
-					&& ref[6] == ':' //
-					&& ref[7] == ' ';
-		}
-
-		private static File getSymRef(File workTree, File dotGit, FS fs)
-				throws IOException {
-			byte[] content = IO.readFully(dotGit);
-			if (!isSymRef(content))
-				throw new IOException(
-						MessageFormat.format(JGitText.get().invalidGitdirRef,
-								dotGit.getAbsolutePath()));
-
-			int pathStart = 8;
-			int lineEnd = RawParseUtils.nextLF(content, pathStart);
-			while (content[lineEnd - 1] == '\n' || (content[lineEnd - 1] == '\r'
-					&& SystemReader.getInstance().isWindows()))
-				lineEnd--;
-			if (lineEnd == pathStart)
-				throw new IOException(
-						MessageFormat.format(JGitText.get().invalidGitdirRef,
-								dotGit.getAbsolutePath()));
-
-			String gitdirPath = RawParseUtils.decode(content, pathStart,
-					lineEnd);
-			File gitdirFile = fs.resolve(workTree, gitdirPath);
-			if (gitdirFile.isAbsolute())
-				return gitdirFile;
-			else
-				return new File(workTree, gitdirPath).getCanonicalFile();
-		}
-
 		private File gitDir;
 
 		private File objectDirectory;
@@ -2379,20 +2360,19 @@ public abstract class Repository implements AutoCloseable {
 		 */
 		public RepositoryBuilder findGitDir(File current) {
 			if (getGitDir() == null) {
-				FS tryFS = FS.DETECTED;
 				while (current != null) {
 					File dir = new File(current, DOT_GIT);
-					if (FileKey.isGitRepository(dir, tryFS)) {
+					if (FileKey.isGitRepository(dir)) {
 						setGitDir(dir);
 						break;
 					} else if (dir.isFile()) {
 						try {
-							setGitDir(getSymRef(current, dir, tryFS));
+							setGitDir(getSymRef(current, dir));
 							break;
 						} catch (IOException ignored) {
 							// Continue searching if gitdir ref isn't found
 						}
-					} else if (FileKey.isGitRepository(current, tryFS)) {
+					} else if (FileKey.isGitRepository(current)) {
 						setGitDir(current);
 						break;
 					}
@@ -2423,10 +2403,36 @@ public abstract class Repository implements AutoCloseable {
 		 */
 		public RepositoryBuilder setup()
 				throws IllegalArgumentException, IOException {
-			requireGitDirOrWorkTree();
-			setupGitDir();
-			setupWorkTree();
-			setupInternals();
+			if (getGitDir() == null && getWorkTree() == null)
+			throw new IllegalArgumentException(
+					JGitText.get().eitherGitDirOrWorkTreeRequired);
+			// No gitDir? Try to assume its under the workTree or a ref to
+			// another
+			// location
+			if (getGitDir() == null && getWorkTree() != null) {
+				File dotGit = new File(getWorkTree(), DOT_GIT);
+				if (dotGit.isFile())
+					setGitDir(getSymRef(getWorkTree(), dotGit));
+				else
+					setGitDir(dotGit);
+			}
+			// If we aren't bare, we should have a work tree.
+			//
+			if (!isBare() && getWorkTree() == null)
+				this.workTree = guessWorkTreeOrFail();
+
+			if (!isBare()) {
+				// If after guessing we're still not bare, we must have
+				// a metadata directory to hold the repository. Assume
+				// its at the work tree.
+				//
+				if (getGitDir() == null)
+					setGitDir(getWorkTree().getParentFile());
+				if (getIndexFile() == null)
+					setIndexFile(new File(getGitDir(), "index")); //$NON-NLS-1$
+			}
+			if (getObjectDirectory() == null && getGitDir() != null)
+				setObjectDirectory(FS.DETECTED.resolve(getGitDir(), "objects")); //$NON-NLS-1$
 			return this;
 		}
 
@@ -2451,86 +2457,6 @@ public abstract class Repository implements AutoCloseable {
 			if (mustExist && !repo.getObjectDatabase().exists())
 				throw new RepositoryNotFoundException(getGitDir());
 			return repo;
-		}
-
-		/** Require either {@code gitDir} or {@code workTree} to be set. */
-		protected void requireGitDirOrWorkTree() {
-			if (getGitDir() == null && getWorkTree() == null)
-				throw new IllegalArgumentException(
-						JGitText.get().eitherGitDirOrWorkTreeRequired);
-		}
-
-		/**
-		 * Perform standard gitDir initialization.
-		 *
-		 * @throws IOException
-		 *             the repository could not be accessed
-		 */
-		protected void setupGitDir() throws IOException {
-			// No gitDir? Try to assume its under the workTree or a ref to
-			// another
-			// location
-			if (getGitDir() == null && getWorkTree() != null) {
-				File dotGit = new File(getWorkTree(), DOT_GIT);
-				if (dotGit.isFile())
-					setGitDir(getSymRef(getWorkTree(), dotGit, FS.DETECTED));
-				else
-					setGitDir(dotGit);
-			}
-		}
-
-		/**
-		 * Perform standard work-tree initialization.
-		 * <p>
-		 * This is a method typically invoked inside of {@link #setup()}, near
-		 * the end after the repository has been identified and its
-		 * configuration is available for inspection.
-		 *
-		 * @throws IOException
-		 *             the repository configuration could not be read.
-		 */
-		protected void setupWorkTree() throws IOException {
-
-			// If we aren't bare, we should have a work tree.
-			//
-			if (!isBare() && getWorkTree() == null)
-				setWorkTree(guessWorkTreeOrFail());
-
-			if (!isBare()) {
-				// If after guessing we're still not bare, we must have
-				// a metadata directory to hold the repository. Assume
-				// its at the work tree.
-				//
-				if (getGitDir() == null)
-					setGitDir(getWorkTree().getParentFile());
-				if (getIndexFile() == null)
-					setIndexFile(new File(getGitDir(), "index")); //$NON-NLS-1$
-			}
-		}
-
-		/**
-		 * Configure the internal implementation details of the repository.
-		 *
-		 * @throws IOException
-		 *             the repository could not be accessed
-		 */
-		protected void setupInternals() {
-			if (getObjectDirectory() == null && getGitDir() != null)
-				setObjectDirectory(FS.DETECTED.resolve(getGitDir(), "objects")); //$NON-NLS-1$
-		}
-
-		/**
-		 * Get the cached repository configuration, loading if not yet
-		 * available.
-		 *
-		 * @return the configuration of the repository.
-		 * @throws IOException
-		 *             the configuration is not available, or is badly formed.
-		 */
-		protected Config getConfig() throws IOException {
-			if (config == null)
-				config = loadConfig();
-			return config;
 		}
 
 		/**
@@ -2564,7 +2490,9 @@ public abstract class Repository implements AutoCloseable {
 		}
 
 		private File guessWorkTreeOrFail() throws IOException {
-			final Config cfg = getConfig();
+			if (config == null)
+			config = loadConfig();
+			final Config cfg = config;
 
 			// If set, core.worktree wins.
 			//

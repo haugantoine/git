@@ -117,11 +117,10 @@ public class ReflogWriter {
 	 *            repository's config and current log file status
 	 */
 	public ReflogWriter(final Repository repository, final boolean forceWrite) {
-		final FS fs = repository.getFS();
 		parent = repository;
 		File gitDir = repository.getDirectory();
-		logsDir = fs.resolve(gitDir, LOGS);
-		logsRefsDir = fs.resolve(gitDir, LOGS + '/' + R_REFS);
+		logsDir = FS.DETECTED.resolve(gitDir, LOGS);
+		logsRefsDir = FS.DETECTED.resolve(gitDir, LOGS + '/' + R_REFS);
 		this.forceWrite = forceWrite;
 	}
 

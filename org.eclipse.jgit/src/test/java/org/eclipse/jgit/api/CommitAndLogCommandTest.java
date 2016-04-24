@@ -274,13 +274,12 @@ public class CommitAndLogCommandTest extends RepositoryTestCase {
 			git.commit().setMessage("commit1").setCommitter(committer).call();
 
 			// pure mode change should be committable
-			FS fs = db.getFS();
-			fs.setExecute(file, true);
+			FS.DETECTED.setExecute(file, true);
 			git.add().addFilepattern("a.txt").call();
 			git.commit().setMessage("mode change").setCommitter(committer).call();
 
 			// pure mode change should be committable with -o option
-			fs.setExecute(file, false);
+			FS.DETECTED.setExecute(file, false);
 			git.add().addFilepattern("a.txt").call();
 			git.commit().setMessage("mode change").setCommitter(committer)
 					.setOnly("a.txt").call();

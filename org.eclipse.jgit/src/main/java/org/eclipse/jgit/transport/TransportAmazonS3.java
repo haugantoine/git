@@ -70,6 +70,7 @@ import org.eclipse.jgit.lib.ObjectIdRef;
 import org.eclipse.jgit.lib.ProgressMonitor;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Ref.Storage;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.SymbolicRef;
 
@@ -170,7 +171,7 @@ public class TransportAmazonS3 extends HttpTransport implements WalkTransport {
 				return loadPropertiesFile(propsFile);
 		}
 
-		File propsFile = new File(local.getFS().userHome(), uri.getUser());
+		File propsFile = new File(FS.DETECTED.userHome(), uri.getUser());
 		if (propsFile.isFile())
 			return loadPropertiesFile(propsFile);
 

@@ -437,15 +437,14 @@ public abstract class WorkingTreeIterator extends AbstractTreeIterator {
 		in = handleAutoCRLF(in);
 		String filterCommand = getCleanFilterCommand();
 		if (filterCommand != null) {
-			FS fs = repository.getFS();
-			ProcessBuilder filterProcessBuilder = fs.runInShell(filterCommand,
+			ProcessBuilder filterProcessBuilder = FS.DETECTED.runInShell(filterCommand,
 					new String[0]);
 			filterProcessBuilder.directory(repository.getWorkTree());
 			filterProcessBuilder.environment().put(Constants.GIT_DIR_KEY,
 					repository.getDirectory().getAbsolutePath());
 			ExecutionResult result;
 			try {
-				result = fs.execute(filterProcessBuilder, in);
+				result = FS.DETECTED.execute(filterProcessBuilder, in);
 			} catch (IOException | InterruptedException e) {
 				throw new IOException(new FilterFailedException(e,
 						filterCommand, getEntryPathString()));
@@ -1211,19 +1210,18 @@ public abstract class WorkingTreeIterator extends AbstractTreeIterator {
 					r = new IgnoreNode();
 			}
 
-			FS fs = repository.getFS();
 			String path = repository.getConfig().get(CoreConfig.KEY)
 					.getExcludesFile();
 			if (path != null) {
 				File excludesfile;
 				if (path.startsWith("~/")) //$NON-NLS-1$
-					excludesfile = fs.resolve(fs.userHome(), path.substring(2));
+					excludesfile = FS.DETECTED.resolve(FS.DETECTED.userHome(), path.substring(2));
 				else
-					excludesfile = fs.resolve(null, path);
+					excludesfile = FS.DETECTED.resolve(null, path);
 				loadRulesFromFile(r, excludesfile);
 			}
 
-			File exclude = fs.resolve(repository.getDirectory(),
+			File exclude = FS.DETECTED.resolve(repository.getDirectory(),
 					Constants.INFO_EXCLUDE);
 			loadRulesFromFile(r, exclude);
 

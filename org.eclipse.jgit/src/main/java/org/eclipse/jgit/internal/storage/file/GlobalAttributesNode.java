@@ -69,16 +69,15 @@ public class GlobalAttributesNode extends AttributesNode {
 	public AttributesNode load() throws IOException {
 		AttributesNode r = new AttributesNode();
 
-		FS fs = repository.getFS();
 		String path = repository.getConfig().get(CoreConfig.KEY)
 				.getAttributesFile();
 		if (path != null) {
 			File attributesFile;
 			if (path.startsWith("~/")) { //$NON-NLS-1$
-				attributesFile = fs.resolve(fs.userHome(),
+				attributesFile = FS.DETECTED.resolve(FS.DETECTED.userHome(),
 						path.substring(2));
 			} else {
-				attributesFile = fs.resolve(null, path);
+				attributesFile = FS.DETECTED.resolve(null, path);
 			}
 			FileRepository.AttributesNodeProviderImpl.loadRulesFromFile(r, attributesFile);
 		}

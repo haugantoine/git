@@ -77,6 +77,7 @@ import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
 import org.eclipse.jgit.util.StringUtils;
 import org.eclipse.jgit.util.SystemReader;
@@ -170,8 +171,7 @@ public class FileRepository extends Repository {
 
 		if (StringUtils.isEmptyOrNull(SystemReader.getInstance().getenv(
 				Constants.GIT_CONFIG_NOSYSTEM_KEY)))
-			systemConfig = SystemReader.getInstance().openSystemConfig(null,
-					getFS());
+			systemConfig = SystemReader.getInstance().openSystemConfig(null);
 		else
 			systemConfig = new FileBasedConfig(null) {
 				public void load() {
@@ -183,9 +183,9 @@ public class FileRepository extends Repository {
 					return false;
 				}
 			};
-		userConfig = SystemReader.getInstance().openUserConfig(systemConfig,
-				getFS());
-		repoConfig = new FileBasedConfig(userConfig, getFS().resolve(
+		userConfig = SystemReader.getInstance().openUserConfig(systemConfig);
+		repoConfig = new FileBasedConfig(userConfig,
+				FS.DETECTED.resolve(
 				getDirectory(), Constants.CONFIG));
 
 		loadSystemConfig();
@@ -217,7 +217,6 @@ public class FileRepository extends Repository {
 		objectDatabase = new ObjectDirectory(repoConfig, //
 				options.getObjectDirectory(), //
 				options.getAlternateObjectDirectories(), //
-				getFS(), //
 				new File(getDirectory(), Constants.SHALLOW));
 
 		if (objectDatabase.exists() && repositoryFormatVersion > 1)
@@ -286,7 +285,7 @@ public class FileRepository extends Repository {
 				HideDotFiles.DOTGITONLY);
 		if (hideDotFiles != HideDotFiles.FALSE && !isBare()
 				&& getDirectory().getName().startsWith(".")) //$NON-NLS-1$
-			getFS().setHidden(getDirectory(), true);
+			FS.DETECTED.setHidden(getDirectory(), true);
 		refs.create();
 		objectDatabase.create();
 
@@ -298,14 +297,14 @@ public class FileRepository extends Repository {
 		head.link(Constants.R_HEADS + Constants.MASTER);
 
 		final boolean fileMode;
-		if (getFS().supportsExecute()) {
+		if (FS.DETECTED.supportsExecute()) {
 			File tmp = File.createTempFile("try", "execute", getDirectory()); //$NON-NLS-1$ //$NON-NLS-2$
 
-			getFS().setExecute(tmp, true);
-			final boolean on = getFS().canExecute(tmp);
+			FS.DETECTED.setExecute(tmp, true);
+			final boolean on = FS.DETECTED.canExecute(tmp);
 
-			getFS().setExecute(tmp, false);
-			final boolean off = getFS().canExecute(tmp);
+			FS.DETECTED.setExecute(tmp, false);
+			final boolean off = FS.DETECTED.canExecute(tmp);
 			FileUtils.delete(tmp);
 
 			fileMode = on && !off;
@@ -314,10 +313,10 @@ public class FileRepository extends Repository {
 		}
 
 		SymLinks symLinks = SymLinks.FALSE;
-		if (getFS().supportsSymlinks()) {
+		if (FS.DETECTED.supportsSymlinks()) {
 			File tmp = new File(getDirectory(), "tmplink"); //$NON-NLS-1$
 			try {
-				getFS().createSymLink(tmp, "target"); //$NON-NLS-1$
+				FS.DETECTED.createSymLink(tmp, "target"); //$NON-NLS-1$
 				symLinks = null;
 				FileUtils.delete(tmp);
 			} catch (IOException e) {

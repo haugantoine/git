@@ -50,7 +50,6 @@ import java.text.MessageFormat;
 import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.pgm.internal.CLIText;
-import org.eclipse.jgit.util.FS;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
@@ -72,7 +71,7 @@ class UploadPack extends TextBuiltin {
 		final org.eclipse.jgit.transport.UploadPack up;
 
 		try {
-			FileKey key = FileKey.lenient(srcGitdir, FS.DETECTED);
+			FileKey key = FileKey.lenient(srcGitdir);
 			db = key.open(true /* must exist */);
 		} catch (RepositoryNotFoundException notFound) {
 			throw die(MessageFormat.format(CLIText.get().notAGitRepository,

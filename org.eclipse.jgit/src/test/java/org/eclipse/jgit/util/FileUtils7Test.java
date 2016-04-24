@@ -74,13 +74,12 @@ public class FileUtils7Test {
 	public void testDeleteSymlinkToDirectoryDoesNotDeleteTarget()
 			throws IOException {
 		org.junit.Assume.assumeTrue(FS.DETECTED.supportsSymlinks());
-		FS fs = FS.DETECTED;
 		File dir = new File(trash, "dir");
 		File file = new File(dir, "file");
 		File link = new File(trash, "link");
 		FileUtils.mkdirs(dir);
 		FileUtils.createNewFile(file);
-		fs.createSymLink(link, "dir");
+		FS.DETECTED.createSymLink(link, "dir");
 		FileUtils.delete(link, FileUtils.RECURSIVE);
 		assertFalse(link.exists());
 		assertTrue(dir.exists());

@@ -59,7 +59,6 @@ import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
-import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.SystemReader;
 
 /**
@@ -125,13 +124,13 @@ public class MockSystemReader extends SystemReader {
 	}
 
 	@Override
-	public FileBasedConfig openUserConfig(Config parent, FS fs) {
+	public FileBasedConfig openUserConfig(Config parent) {
 		assert parent == null || parent == systemGitConfig;
 		return userGitConfig;
 	}
 
 	@Override
-	public FileBasedConfig openSystemConfig(Config parent, FS fs) {
+	public FileBasedConfig openSystemConfig(Config parent) {
 		assert parent == null;
 		return systemGitConfig;
 	}

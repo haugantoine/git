@@ -66,6 +66,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.RepositoryState;
 import org.eclipse.jgit.merge.ResolveMerger.MergeFailureReason;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.util.FS;
 import org.junit.Test;
 
 /**
@@ -297,7 +298,7 @@ public class CherryPickCommandTest extends RepositoryTestCase {
 
 			assertNotNull(git.commit().setMessage("commit3").call());
 
-			db.getFS().setExecute(file, false);
+			FS.DETECTED.setExecute(file, false);
 			git.getRepository()
 					.getConfig()
 					.setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null,

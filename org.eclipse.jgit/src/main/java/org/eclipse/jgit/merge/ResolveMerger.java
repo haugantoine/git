@@ -786,10 +786,9 @@ public class ResolveMerger extends ThreeWayMerger {
 	private File writeMergedFile(MergeResult<RawText> result)
 			throws FileNotFoundException, IOException {
 		File workTree = db.getWorkTree();
-		FS fs = db.getFS();
 		File of = new File(workTree, tw.getPathString());
 		File parentFolder = of.getParentFile();
-		if (!fs.exists(parentFolder))
+		if (!FS.DETECTED.exists(parentFolder))
 			parentFolder.mkdirs();
 		try (OutputStream os = new BufferedOutputStream(
 				new FileOutputStream(of))) {

@@ -73,20 +73,13 @@ public class FileTreeIterator extends WorkingTreeIterator {
 	protected final File directory;
 
 	/**
-	 * the file system abstraction which will be necessary to perform certain
-	 * file system operations.
-	 */
-	protected final FS fs;
-
-	/**
 	 * Create a new iterator to traverse the work tree and its children.
 	 *
 	 * @param repo
 	 *            the repository whose working tree will be scanned.
 	 */
 	public FileTreeIterator(Repository repo) {
-		this(repo.getWorkTree(), repo.getFS(),
-				repo.getConfig().get(WorkingTreeOptions.KEY));
+		this(repo.getWorkTree(), repo.getConfig().get(WorkingTreeOptions.KEY));
 		initRootIterator(repo);
 	}
 
@@ -102,10 +95,9 @@ public class FileTreeIterator extends WorkingTreeIterator {
 	 * @param options
 	 *            working tree options to be used
 	 */
-	public FileTreeIterator(final File root, FS fs, WorkingTreeOptions options) {
+	public FileTreeIterator(final File root, WorkingTreeOptions options) {
 		super(options);
 		directory = root;
-		this.fs = fs;
 		init(entries());
 	}
 
@@ -121,18 +113,16 @@ public class FileTreeIterator extends WorkingTreeIterator {
 	 *            the subdirectory. This should be a directory contained within
 	 *            the parent directory.
 	 */
-	protected FileTreeIterator(final WorkingTreeIterator p, final File root,
-			FS fs) {
+	protected FileTreeIterator(final WorkingTreeIterator p, final File root) {
 		super(p);
 		directory = root;
-		this.fs = fs;
 		init(entries());
 	}
 
 	@Override
 	public AbstractTreeIterator createSubtreeIterator(final ObjectReader reader)
 			throws IncorrectObjectTypeException, IOException {
-		return new FileTreeIterator(this, ((FileEntry) current()).getFile(), fs);
+		return new FileTreeIterator(this, ((FileEntry) current()).getFile());
 	}
 
 	private Entry[] entries() {
@@ -141,7 +131,7 @@ public class FileTreeIterator extends WorkingTreeIterator {
 			return EOF;
 		final Entry[] r = new Entry[all.length];
 		for (int i = 0; i < r.length; i++)
-			r[i] = new FileEntry(all[i], fs);
+			r[i] = new FileEntry(all[i]);
 		return r;
 	}
 
@@ -153,8 +143,6 @@ public class FileTreeIterator extends WorkingTreeIterator {
 
 		private FS.Attributes attributes;
 
-		private FS fs;
-
 		/**
 		 * Create a new file entry.
 		 *
@@ -163,10 +151,9 @@ public class FileTreeIterator extends WorkingTreeIterator {
 		 * @param fs
 		 *            file system
 		 */
-		public FileEntry(File f, FS fs) {
-			this.fs = fs;
-			f = fs.normalize(f);
-			attributes = fs.getAttributes(f);
+		public FileEntry(File f) {
+			f = FS.DETECTED.normalize(f);
+			attributes = FS.DETECTED.getAttributes(f);
 			if (attributes.isSymbolicLink())
 				mode = FileMode.SYMLINK;
 			else if (attributes.isDirectory()) {
@@ -202,8 +189,9 @@ public class FileTreeIterator extends WorkingTreeIterator {
 
 		@Override
 		public InputStream openInputStream() throws IOException {
-			if (fs.isSymLink(getFile()))
-				return new ByteArrayInputStream(fs.readSymLink(getFile())
+			if (FS.DETECTED.isSymLink(getFile()))
+				return new ByteArrayInputStream(
+						FS.DETECTED.readSymLink(getFile())
 						.getBytes(
 						Constants.CHARACTER_ENCODING));
 			else

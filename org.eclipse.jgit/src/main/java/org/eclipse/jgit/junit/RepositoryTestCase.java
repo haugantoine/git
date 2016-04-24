@@ -314,20 +314,19 @@ public abstract class RepositoryTestCase extends LocalDiskRepositoryTestCase {
 	public static long fsTick(File lastFile) throws InterruptedException,
 			IOException {
 		long sleepTime = 64;
-		FS fs = FS.DETECTED;
-		if (lastFile != null && !fs.exists(lastFile))
+		if (lastFile != null && !FS.DETECTED.exists(lastFile))
 			throw new FileNotFoundException(lastFile.getPath());
 		File tmp = File.createTempFile("FileTreeIteratorWithTimeControl", null);
 		try {
-			long startTime = (lastFile == null) ? fs.lastModified(tmp) : fs
+			long startTime = (lastFile == null) ? FS.DETECTED.lastModified(tmp) : FS.DETECTED
 					.lastModified(lastFile);
-			long actTime = fs.lastModified(tmp);
+			long actTime = FS.DETECTED.lastModified(tmp);
 			while (actTime <= startTime) {
 				Thread.sleep(sleepTime);
 				sleepTime *= 2;
 				FileOutputStream fos = new FileOutputStream(tmp);
 				fos.close();
-				actTime = fs.lastModified(tmp);
+				actTime = FS.DETECTED.lastModified(tmp);
 			}
 			return actTime;
 		} finally {

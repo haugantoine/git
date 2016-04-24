@@ -57,7 +57,6 @@ import org.eclipse.jgit.lib.ObjectDatabase;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.util.FS;
 
 abstract class FileObjectDatabase extends ObjectDatabase {
 	static enum InsertLooseObjectResult {
@@ -78,8 +77,6 @@ abstract class FileObjectDatabase extends ObjectDatabase {
 			throws IOException;
 
 	abstract Config getConfig();
-
-	abstract FS getFS();
 
 	abstract Set<ObjectId> getShallowCommits() throws IOException;
 

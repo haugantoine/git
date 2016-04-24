@@ -433,13 +433,13 @@ public class DirCacheCheckout {
 			for (int i = removed.size() - 1; i >= 0; i--) {
 				String r = removed.get(i);
 				file = new File(repo.getWorkTree(), r);
-				if (!file.delete() && repo.getFS().exists(file)) {
+				if (!file.delete() && FS.DETECTED.exists(file)) {
 					// The list of stuff to delete comes from the index
 					// which will only contain a directory if it is
 					// a submodule, in which case we shall not attempt
 					// to delete it. A submodule is not empty, so it
 					// is safe to check this after a failed delete.
-					if (!repo.getFS().isDirectory(file))
+					if (!FS.DETECTED.isDirectory(file))
 						toBeDeleted.add(r);
 				} else {
 					if (last != null && !isSamePrefix(r, last))
@@ -1240,7 +1240,6 @@ public class DirCacheCheckout {
 		File f = new File(repo.getWorkTree(), entry.getPathString());
 		File parentDir = f.getParentFile();
 		FileUtils.mkdirs(parentDir, true);
-		FS fs = repo.getFS();
 		WorkingTreeOptions opt = repo.getConfig().get(WorkingTreeOptions.KEY);
 		if (entry.getFileMode() == FileMode.SYMLINK
 				&& opt.getSymLinks() == SymLinks.TRUE) {
@@ -1249,9 +1248,9 @@ public class DirCacheCheckout {
 			if (deleteRecursive && f.isDirectory()) {
 				FileUtils.delete(f, FileUtils.RECURSIVE);
 			}
-			fs.createSymLink(f, target);
+			FS.DETECTED.createSymLink(f, target);
 			entry.setLength(bytes.length);
-			entry.setLastModified(fs.lastModified(f));
+			entry.setLastModified(FS.DETECTED.lastModified(f));
 			return;
 		}
 
@@ -1261,7 +1260,7 @@ public class DirCacheCheckout {
 		if (opt.getAutoCRLF() == AutoCRLF.TRUE)
 			channel = new AutoCRLFOutputStream(channel);
 		if (smudgeFilterCommand != null) {
-			ProcessBuilder filterProcessBuilder = fs
+			ProcessBuilder filterProcessBuilder = FS.DETECTED
 					.runInShell(smudgeFilterCommand, new String[0]);
 			filterProcessBuilder.directory(repo.getWorkTree());
 			filterProcessBuilder.environment().put(Constants.GIT_DIR_KEY,
@@ -1270,7 +1269,7 @@ public class DirCacheCheckout {
 			int rc;
 			try {
 				// TODO: wire correctly with AUTOCRLF
-				result = fs.execute(filterProcessBuilder, ol.openStream());
+				result = FS.DETECTED.execute(filterProcessBuilder, ol.openStream());
 				rc = result.getRc();
 				if (rc == 0) {
 					result.getStdout().writeTo(channel,
@@ -1307,13 +1306,13 @@ public class DirCacheCheckout {
 			entry.setLength(ol.getSize());
 		}
 
-		if (opt.isFileMode() && fs.supportsExecute()) {
+		if (opt.isFileMode() && FS.DETECTED.supportsExecute()) {
 			if (FileMode.EXECUTABLE_FILE.equals(entry.getRawMode())) {
-				if (!fs.canExecute(tmpFile))
-					fs.setExecute(tmpFile, true);
+				if (!FS.DETECTED.canExecute(tmpFile))
+					FS.DETECTED.setExecute(tmpFile, true);
 			} else {
-				if (fs.canExecute(tmpFile))
-					fs.setExecute(tmpFile, false);
+				if (FS.DETECTED.canExecute(tmpFile))
+					FS.DETECTED.setExecute(tmpFile, false);
 			}
 		}
 		try {

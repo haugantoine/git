@@ -65,6 +65,7 @@ import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.CoreConfig.AutoCRLF;
 import org.eclipse.jgit.treewalk.WorkingTreeOptions;
+import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.IO;
 import org.eclipse.jgit.util.io.EolCanonicalizingInputStream;
 
@@ -221,7 +222,7 @@ public class BlameCommand extends GitCommand<BlameResult> {
 						gen.push(null, dc.getEntry(entry).getObjectId());
 
 					File inTree = new File(repo.getWorkTree(), path);
-					if (repo.getFS().isFile(inTree)) {
+					if (FS.DETECTED.isFile(inTree)) {
 						RawText rawText = getRawText(inTree);
 						gen.push(null, rawText);
 					}

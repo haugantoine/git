@@ -71,6 +71,7 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.pgm.internal.CLIText;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevFlag;
+import org.eclipse.jgit.util.FS;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.Option;
 
@@ -182,7 +183,7 @@ class Blame extends TextBuiltin {
 						generator.push(null, dc.getEntry(entry).getObjectId());
 
 					File inTree = new File(db.getWorkTree(), file);
-					if (db.getFS().isFile(inTree))
+					if (FS.DETECTED.isFile(inTree))
 						generator.push(null, new RawText(inTree));
 				}
 			}

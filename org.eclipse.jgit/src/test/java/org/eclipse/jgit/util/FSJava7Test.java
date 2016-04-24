@@ -89,52 +89,50 @@ public class FSJava7Test {
 	@Test
 	public void testSymlinkAttributes() throws IOException, InterruptedException {
 		Assume.assumeTrue(FS.DETECTED.supportsSymlinks());
-		FS fs = FS.DETECTED;
 		File link = new File(trash, "ä");
 		File target = new File(trash, "å");
-		fs.createSymLink(link, "å");
-		assertTrue(fs.exists(link));
-		String targetName = fs.readSymLink(link);
+		FS.DETECTED.createSymLink(link, "å");
+		assertTrue(FS.DETECTED.exists(link));
+		String targetName = FS.DETECTED.readSymLink(link);
 		assertEquals("å", targetName);
-		assertTrue(fs.lastModified(link) > 0);
-		assertTrue(fs.exists(link));
-		assertFalse(fs.canExecute(link));
-		assertEquals(2, fs.length(link));
-		assertFalse(fs.exists(target));
-		assertFalse(fs.isFile(target));
-		assertFalse(fs.isDirectory(target));
-		assertFalse(fs.canExecute(target));
+		assertTrue(FS.DETECTED.lastModified(link) > 0);
+		assertTrue(FS.DETECTED.exists(link));
+		assertFalse(FS.DETECTED.canExecute(link));
+		assertEquals(2, FS.DETECTED.length(link));
+		assertFalse(FS.DETECTED.exists(target));
+		assertFalse(FS.DETECTED.isFile(target));
+		assertFalse(FS.DETECTED.isDirectory(target));
+		assertFalse(FS.DETECTED.canExecute(target));
 
 		RepositoryTestCase.fsTick(link);
 		// Now create the link target
 		FileUtils.createNewFile(target);
-		assertTrue(fs.exists(link));
-		assertTrue(fs.lastModified(link) > 0);
-		assertTrue(fs.lastModified(target) > fs.lastModified(link));
-		assertFalse(fs.canExecute(link));
-		fs.setExecute(target, true);
-		assertFalse(fs.canExecute(link));
-		assumeTrue(fs.supportsExecute());
-		assertTrue(fs.canExecute(target));
+		assertTrue(FS.DETECTED.exists(link));
+		assertTrue(FS.DETECTED.lastModified(link) > 0);
+		assertTrue(FS.DETECTED.lastModified(target) > FS.DETECTED.lastModified(link));
+		assertFalse(FS.DETECTED.canExecute(link));
+		FS.DETECTED.setExecute(target, true);
+		assertFalse(FS.DETECTED.canExecute(link));
+		assumeTrue(FS.DETECTED.supportsExecute());
+		assertTrue(FS.DETECTED.canExecute(target));
 	}
 
 	@Test
 	public void testExecutableAttributes() throws Exception {
-		FS fs = FS.DETECTED.newInstance();
 		// If this assumption fails the test is halted and ignored.
-		assumeTrue(fs instanceof FS_POSIX);
-		((FS_POSIX) fs).setUmask(0022);
+		assumeTrue(FS.DETECTED.newInstance() instanceof FS_POSIX);
+		((FS_POSIX) FS.DETECTED.newInstance()).setUmask(0022);
 
 		File f = new File(trash, "bla");
 		assertTrue(f.createNewFile());
-		assertFalse(fs.canExecute(f));
+		assertFalse(FS.DETECTED.newInstance().canExecute(f));
 
 		Set<PosixFilePermission> permissions = readPermissions(f);
 		assertTrue(!permissions.contains(PosixFilePermission.OTHERS_EXECUTE));
 		assertTrue(!permissions.contains(PosixFilePermission.GROUP_EXECUTE));
 		assertTrue(!permissions.contains(PosixFilePermission.OWNER_EXECUTE));
 
-		fs.setExecute(f, true);
+		FS.DETECTED.newInstance().setExecute(f, true);
 
 		permissions = readPermissions(f);
 		assertTrue("'owner' execute permission not set",
@@ -144,10 +142,10 @@ public class FSJava7Test {
 		assertTrue("'others' execute permission not set",
 				permissions.contains(PosixFilePermission.OTHERS_EXECUTE));
 
-		((FS_POSIX) fs).setUmask(0033);
-		fs.setExecute(f, false);
-		assertFalse(fs.canExecute(f));
-		fs.setExecute(f, true);
+		((FS_POSIX) FS.DETECTED.newInstance()).setUmask(0033);
+		FS.DETECTED.newInstance().setExecute(f, false);
+		assertFalse(FS.DETECTED.newInstance().canExecute(f));
+		FS.DETECTED.newInstance().setExecute(f, true);
 
 		permissions = readPermissions(f);
 		assertTrue("'owner' execute permission not set",

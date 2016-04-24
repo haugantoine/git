@@ -46,10 +46,8 @@ import java.io.File;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.eclipse.jgit.lib.Config;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.FS;
 
 /**
  * A {@link FileTreeIterator} used in tests which allows to specify explicitly
@@ -70,13 +68,13 @@ public class FileTreeIteratorWithTimeControl extends FileTreeIterator {
 
 	public FileTreeIteratorWithTimeControl(FileTreeIterator p, Repository repo,
 			TreeSet<Long> modTimes) {
-		super(p, repo.getWorkTree(), repo.getFS());
+		super(p, repo.getWorkTree());
 		this.modTimes = modTimes;
 	}
 
-	public FileTreeIteratorWithTimeControl(FileTreeIterator p, File f, FS fs,
+	public FileTreeIteratorWithTimeControl(FileTreeIterator p, File f,
 			TreeSet<Long> modTimes) {
-		super(p, f, fs);
+		super(p, f);
 		this.modTimes = modTimes;
 	}
 
@@ -86,16 +84,10 @@ public class FileTreeIteratorWithTimeControl extends FileTreeIterator {
 		this.modTimes = modTimes;
 	}
 
-	public FileTreeIteratorWithTimeControl(File f, FS fs,
-			TreeSet<Long> modTimes) {
-		super(f, fs, new Config().get(WorkingTreeOptions.KEY));
-		this.modTimes = modTimes;
-	}
-
 	@Override
 	public AbstractTreeIterator createSubtreeIterator(final ObjectReader reader) {
 		return new FileTreeIteratorWithTimeControl(this,
-				((FileEntry) current()).getFile(), fs, modTimes);
+				((FileEntry) current()).getFile(), modTimes);
 	}
 
 	@Override

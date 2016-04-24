@@ -119,13 +119,13 @@ class TransportLocal extends Transport implements PackTransport {
 		public Transport open(URIish uri, Repository local, String remoteName)
 				throws NoRemoteRepositoryException {
 			File localPath = local.isBare() ? local.getDirectory() : local.getWorkTree();
-			File path = local.getFS().resolve(localPath, uri.getPath());
+			File path = FS.DETECTED.resolve(localPath, uri.getPath());
 			// If the reference is to a local file, C Git behavior says
 			// assume this is a bundle, since repositories are directories.
 			if (path.isFile())
 				return new TransportBundleFile(local, uri, path);
 
-			File gitDir = RepositoryCache.FileKey.resolve(path, local.getFS());
+			File gitDir = RepositoryCache.FileKey.resolve(path);
 			if (gitDir == null)
 				throw new NoRemoteRepositoryException(uri, JGitText.get().notFound);
 			return new TransportLocal(local, uri, gitDir);
@@ -139,7 +139,7 @@ class TransportLocal extends Transport implements PackTransport {
 			if (path.isFile())
 				return new TransportBundleFile(uri, path);
 
-			File gitDir = RepositoryCache.FileKey.resolve(path, FS.DETECTED);
+			File gitDir = RepositoryCache.FileKey.resolve(path);
 			if (gitDir == null)
 				throw new NoRemoteRepositoryException(uri,
 						JGitText.get().notFound);
@@ -216,7 +216,7 @@ class TransportLocal extends Transport implements PackTransport {
 			throws TransportException {
 		try {
 			String[] args = { "." }; //$NON-NLS-1$
-			ProcessBuilder proc = local.getFS().runInShell(cmd, args);
+			ProcessBuilder proc = FS.DETECTED.runInShell(cmd, args);
 			proc.directory(remoteGitDir);
 
 			// Remove the same variables CGit does.

@@ -175,12 +175,11 @@ public class RefDirectory extends RefDatabase {
 	private final AtomicInteger lastNotifiedModCnt = new AtomicInteger();
 
 	RefDirectory(final FileRepository db) {
-		final FS fs = db.getFS();
 		parent = db;
 		gitDir = db.getDirectory();
 		logWriter = new ReflogWriter(db);
-		refsDir = fs.resolve(gitDir, R_REFS);
-		packedRefsFile = fs.resolve(gitDir, PACKED_REFS);
+		refsDir = FS.DETECTED.resolve(gitDir, R_REFS);
+		packedRefsFile = FS.DETECTED.resolve(gitDir, PACKED_REFS);
 
 		looseRefs.set(RefList.<LooseRef> emptyList());
 		packedRefs.set(PackedRefList.NO_PACKED_REFS);
@@ -635,8 +634,6 @@ public class RefDirectory extends RefDatabase {
 	public void pack(List<String> refs) throws IOException {
 		if (refs.size() == 0)
 			return;
-		FS fs = parent.getFS();
-
 		// Lock the packed refs file and read the content
 		LockFile lck = new LockFile(packedRefsFile);
 		if (!lck.lock())
@@ -667,7 +664,7 @@ public class RefDirectory extends RefDatabase {
 			for (String refName : refs) {
 				// Lock the loose ref
 				File refFile = fileFor(refName);
-				if (!fs.exists(refFile))
+				if (!FS.DETECTED.exists(refFile))
 					continue;
 				LockFile rLck = new LockFile(refFile);
 				if (!rLck.lock())

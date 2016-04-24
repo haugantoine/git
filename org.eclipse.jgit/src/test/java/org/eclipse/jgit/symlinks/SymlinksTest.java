@@ -87,13 +87,12 @@ public class SymlinksTest extends RepositoryTestCase {
 		git.commit().setMessage("add symlink a").call();
 
 		FileEntry entry = new FileTreeIterator.FileEntry(new File(
-				db.getWorkTree(), "a"), db.getFS());
+				db.getWorkTree(), "a"));
 		assertEquals(FileMode.SYMLINK, entry.getMode());
 
 		git.checkout().setName(branch_1.getName()).call();
 
-		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"),
-				db.getFS());
+		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"));
 		assertEquals(FileMode.REGULAR_FILE, entry.getMode());
 	}
 
@@ -120,13 +119,12 @@ public class SymlinksTest extends RepositoryTestCase {
 		git.commit().setMessage("add file a").call();
 
 		FileEntry entry = new FileTreeIterator.FileEntry(new File(
-				db.getWorkTree(), "a"), db.getFS());
+				db.getWorkTree(), "a"));
 		assertEquals(FileMode.REGULAR_FILE, entry.getMode());
 
 		git.checkout().setName(branch_1.getName()).call();
 
-		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"),
-				db.getFS());
+		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"));
 		assertEquals(FileMode.SYMLINK, entry.getMode());
 	}
 
@@ -154,13 +152,12 @@ public class SymlinksTest extends RepositoryTestCase {
 		git.commit().setMessage("add symlink a").call();
 
 		FileEntry entry = new FileTreeIterator.FileEntry(new File(
-				db.getWorkTree(), "a"), db.getFS());
+				db.getWorkTree(), "a"));
 		assertEquals(FileMode.SYMLINK, entry.getMode());
 
 		git.checkout().setName(branch_1.getName()).call();
 
-		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"),
-				db.getFS());
+		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"));
 		assertEquals(FileMode.TREE, entry.getMode());
 	}
 
@@ -188,13 +185,12 @@ public class SymlinksTest extends RepositoryTestCase {
 		git.commit().setMessage("add folder a").call();
 
 		FileEntry entry = new FileTreeIterator.FileEntry(new File(
-				db.getWorkTree(), "a"), db.getFS());
+				db.getWorkTree(), "a"));
 		assertEquals(FileMode.TREE, entry.getMode());
 
 		git.checkout().setName(branch_1.getName()).call();
 
-		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"),
-				db.getFS());
+		entry = new FileTreeIterator.FileEntry(new File(db.getWorkTree(), "a"));
 		assertEquals(FileMode.SYMLINK, entry.getMode());
 	}
 

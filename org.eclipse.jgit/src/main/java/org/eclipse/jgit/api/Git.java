@@ -48,7 +48,6 @@ import java.io.IOException;
 
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
-import org.eclipse.jgit.util.FS;
 
 /**
  * Offers a "GitPorcelain"-like API to interact with a git repository.
@@ -97,7 +96,7 @@ public class Git implements AutoCloseable {
 	public static Git open(File dir) throws IOException {
 		RepositoryCache.FileKey key;
 
-		key = RepositoryCache.FileKey.lenient(dir, FS.DETECTED);
+		key = RepositoryCache.FileKey.lenient(dir);
 		Repository db = Repository.createFileRepository(key.getFile());
 		return new Git(db, true);
 	}

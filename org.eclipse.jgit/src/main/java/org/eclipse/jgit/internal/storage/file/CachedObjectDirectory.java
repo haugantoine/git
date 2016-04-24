@@ -59,7 +59,6 @@ import org.eclipse.jgit.lib.ObjectDatabase;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectIdOwnerMap;
 import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.util.FS;
 
 /**
  * The cached instance of an {@link ObjectDirectory}.
@@ -138,11 +137,6 @@ class CachedObjectDirectory extends FileObjectDatabase {
 	@Override
 	Config getConfig() {
 		return wrapped.getConfig();
-	}
-
-	@Override
-	FS getFS() {
-		return wrapped.getFS();
 	}
 
 	@Override

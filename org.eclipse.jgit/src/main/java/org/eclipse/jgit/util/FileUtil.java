@@ -46,8 +46,6 @@ package org.eclipse.jgit.util;
 import java.io.File;
 import java.io.IOException;
 
-import org.eclipse.jgit.util.FS.Attributes;
-
 /**
  * File utilities using Java 7 NIO2
  */
@@ -202,17 +200,6 @@ public class FileUtil {
 	@Deprecated
 	public static void delete(File path) throws IOException {
 		FileUtils.delete(path);
-	}
-
-	/**
-	 * @param fs
-	 * @param path
-	 * @return file system attributes for the given file
-	 * @deprecated Use {@link FileUtils#getFileAttributesPosix(FS,File)} instead
-	 */
-	@Deprecated
-	public static Attributes getFileAttributesPosix(FS fs, File path) {
-		return FileUtils.getFileAttributesPosix(fs, path);
 	}
 
 	/**

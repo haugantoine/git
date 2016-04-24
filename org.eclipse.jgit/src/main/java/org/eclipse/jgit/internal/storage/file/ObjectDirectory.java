@@ -129,8 +129,6 @@ public class ObjectDirectory extends FileObjectDatabase {
 
 	private final AtomicReference<PackList> packList;
 
-	private final FS fs;
-
 	private final AtomicReference<AlternateHandle[]> alternates;
 
 	private final UnpackedObjectCache unpackedObjectCache;
@@ -160,7 +158,7 @@ public class ObjectDirectory extends FileObjectDatabase {
 	 *             an alternate object cannot be opened.
 	 */
 	public ObjectDirectory(final Config cfg, final File dir,
-			File[] alternatePaths, FS fs, File shallowFile) throws IOException {
+			File[] alternatePaths, File shallowFile) throws IOException {
 		config = cfg;
 		objects = dir;
 		infoDirectory = new File(objects, "info"); //$NON-NLS-1$
@@ -168,7 +166,6 @@ public class ObjectDirectory extends FileObjectDatabase {
 		alternatesFile = new File(infoDirectory, "alternates"); //$NON-NLS-1$
 		packList = new AtomicReference<PackList>(NO_PACKS);
 		unpackedObjectCache = new UnpackedObjectCache();
-		this.fs = fs;
 		this.shallowFile = shallowFile;
 
 		alternates = new AtomicReference<AlternateHandle[]>();
@@ -191,7 +188,7 @@ public class ObjectDirectory extends FileObjectDatabase {
 
 	@Override
 	public boolean exists() {
-		return fs.exists(objects);
+		return FS.DETECTED.exists(objects);
 	}
 
 	@Override
@@ -674,11 +671,6 @@ public class ObjectDirectory extends FileObjectDatabase {
 	}
 
 	@Override
-	FS getFS() {
-		return fs;
-	}
-
-	@Override
 	Set<ObjectId> getShallowCommits() throws IOException {
 		if (shallowFile == null || !shallowFile.isFile())
 			return Collections.emptySet();
@@ -910,19 +902,19 @@ public class ObjectDirectory extends FileObjectDatabase {
 
 	private AlternateHandle openAlternate(final String location)
 			throws IOException {
-		final File objdir = fs.resolve(objects, location);
+		final File objdir = FS.DETECTED.resolve(objects, location);
 		return openAlternate(objdir);
 	}
 
 	private AlternateHandle openAlternate(File objdir) throws IOException {
 		final File parent = objdir.getParentFile();
-		if (FileKey.isGitRepository(parent, fs)) {
-			FileKey key = FileKey.exact(parent, fs);
+		if (FileKey.isGitRepository(parent)) {
+			FileKey key = FileKey.exact(parent);
 			FileRepository db = (FileRepository) RepositoryCache.open(key);
 			return new AlternateRepository(db);
 		}
 
-		ObjectDirectory db = new ObjectDirectory(config, objdir, null, fs, null);
+		ObjectDirectory db = new ObjectDirectory(config, objdir, null, null);
 		return new AlternateHandle(db);
 	}
 

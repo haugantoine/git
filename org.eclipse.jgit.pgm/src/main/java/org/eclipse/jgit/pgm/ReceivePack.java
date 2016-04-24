@@ -50,7 +50,6 @@ import java.text.MessageFormat;
 import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.pgm.internal.CLIText;
-import org.eclipse.jgit.util.FS;
 import org.kohsuke.args4j.Argument;
 
 @Command(common = false, usage = "usage_ServerSideBackendForJgitPush")
@@ -68,7 +67,7 @@ class ReceivePack extends TextBuiltin {
 		final org.eclipse.jgit.transport.ReceivePack rp;
 
 		try {
-			FileKey key = FileKey.lenient(dstGitdir, FS.DETECTED);
+			FileKey key = FileKey.lenient(dstGitdir);
 			db = key.open(true /* must exist */);
 		} catch (RepositoryNotFoundException notFound) {
 			throw die(MessageFormat.format(CLIText.get().notAGitRepository,

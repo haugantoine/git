@@ -140,7 +140,15 @@ public class FileRepository extends Repository {
 	 * @see FileRepositoryBuilder
 	 */
 	public FileRepository(final File gitDir) throws IOException {
-		this(new RepositoryBuilder().setGitDir(gitDir).setup());
+		this(createRepositoryBuilder(gitDir));
+	}
+
+	private static RepositoryBuilder createRepositoryBuilder(final File gitDir)
+			throws IllegalArgumentException, IOException {
+		RepositoryBuilder rb = new RepositoryBuilder();
+		rb.setGitDir(gitDir);
+		setup(rb);
+		return rb;
 	}
 
 	/**
@@ -167,7 +175,8 @@ public class FileRepository extends Repository {
 	 *             cannot be accessed.
 	 */
 	public FileRepository(final RepositoryBuilder options) throws IOException {
-		super(options);
+		super(options.getGitDir(), options.getWorkTree(),
+				options.getIndexFile());
 
 		if (StringUtils.isEmptyOrNull(SystemReader.getInstance().getenv(
 				Constants.GIT_CONFIG_NOSYSTEM_KEY)))

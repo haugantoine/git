@@ -211,37 +211,27 @@ public abstract class Repository implements AutoCloseable {
 	public static Repository createRepository(File directory, File gitDir,
 			boolean bare) throws IOException {
 		RepositoryBuilder builder = new RepositoryBuilder();
-		if (bare)
-			builder.setBare();
 		readEnvironment(builder);
 		if (gitDir == null)
 			gitDir = builder.getGitDir();
 		else
 			builder.setGitDir(gitDir);
-		if (directory == null) {
-			if (builder.getGitDir() == null) {
-				String dStr = SystemReader.getInstance()
-						.getProperty("user.dir"); //$NON-NLS-1$
-				if (dStr == null)
-					dStr = "."; //$NON-NLS-1$
-				File d = new File(dStr);
-				if (!bare)
-					d = new File(d, Constants.DOT_GIT);
-				builder.setGitDir(d);
-			} else {
-				// directory was not set but gitDir was set
-				if (!bare) {
-					String dStr = SystemReader.getInstance()
-							.getProperty("user.dir"); //$NON-NLS-1$
-					if (dStr == null)
-						dStr = "."; //$NON-NLS-1$
-					builder.setWorkTree(new File(dStr));
-				}
+		if (bare) {
+			builder.setBare();
+			if (directory != null) {
+				builder.setGitDir(directory);
+			} else if (builder.getGitDir() == null) {
+				builder.setGitDir(getUserDirectory());
 			}
 		} else {
-			if (bare)
-				builder.setGitDir(directory);
-			else {
+			if (directory == null) {
+				if (builder.getGitDir() == null) {
+					File d = new File(getUserDirectory(), Constants.DOT_GIT);
+					builder.setGitDir(d);
+				} else {
+					builder.setWorkTree(getUserDirectory());
+				}
+			} else {
 				builder.setWorkTree(directory);
 				if (gitDir == null)
 					builder.setGitDir(new File(directory, Constants.DOT_GIT));
@@ -249,6 +239,14 @@ public abstract class Repository implements AutoCloseable {
 		}
 		setup(builder);
 		return new FileRepository(builder);
+	}
+
+	private static File getUserDirectory() {
+		String dStr = SystemReader.getInstance()
+				.getProperty("user.dir"); //$NON-NLS-1$
+		if (dStr == null)
+			dStr = "."; //$NON-NLS-1$
+		return new File(dStr);
 	}
 
 	public static Repository createRepositoryMustExist(File dir)
@@ -335,6 +333,7 @@ public abstract class Repository implements AutoCloseable {
 			rb.setGitDir(dir);
 		else
 			findGitDir(dir, rb);
+
 		setup(rb);
 		return new FileRepository(rb);
 	}
@@ -2360,25 +2359,6 @@ public abstract class Repository implements AutoCloseable {
 		}
 
 		/**
-		 * Add alternate object directories to the search list.
-		 * <p>
-		 * This setting handles several alternate directories at once, and is
-		 * provided to support {@code GIT_ALTERNATE_OBJECT_DIRECTORIES}.
-		 *
-		 * @param inList
-		 *            other object directories to search after the standard one.
-		 *            The collection's contents is copied to an internal list.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void addAlternateObjectDirectories(
-				Collection<File> inList) {
-			if (inList != null) {
-				for (File path : inList)
-					addAlternateObjectDirectory(path);
-			}
-		}
-
-		/**
 		 * @return ordered array of alternate directories; null if non were set.
 		 */
 		public File[] getAlternateObjectDirectories() {
@@ -2464,43 +2444,6 @@ public abstract class Repository implements AutoCloseable {
 				if (ceilingDirectories == null)
 					ceilingDirectories = new LinkedList<File>();
 				ceilingDirectories.add(root);
-			}
-		}
-
-		/**
-		 * Add ceiling directories to the search list.
-		 * <p>
-		 * This setting handles several ceiling directories at once, and is
-		 * provided to support {@code GIT_CEILING_DIRECTORIES}.
-		 *
-		 * @param inList
-		 *            directory paths to stop searching at. The collection's
-		 *            contents is copied to an internal list.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void addCeilingDirectories(
-				Collection<File> inList) {
-			if (inList != null) {
-				for (File path : inList)
-					addCeilingDirectory(path);
-			}
-		}
-
-		/**
-		 * Add ceiling directories to the search list.
-		 * <p>
-		 * This setting handles several ceiling directories at once, and is
-		 * provided to support {@code GIT_CEILING_DIRECTORIES}.
-		 *
-		 * @param inList
-		 *            directory paths to stop searching at. The array's contents
-		 *            is copied to an internal list.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void addCeilingDirectories(File[] inList) {
-			if (inList != null) {
-				for (File path : inList)
-					addCeilingDirectory(path);
 			}
 		}
 

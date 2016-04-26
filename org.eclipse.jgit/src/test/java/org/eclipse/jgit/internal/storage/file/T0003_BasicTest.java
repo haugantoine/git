@@ -111,17 +111,6 @@ public class T0003_BasicTest extends SampleDataRepositoryTestCase {
 		assertEquals(23, HEAD.length());
 	}
 
-	@Test
-	public void test000_openRepoBadArgs() throws IOException {
-		try {
-			Repository.createEmptyRepository();
-			fail("Must pass either GIT_DIR or GIT_WORK_TREE");
-		} catch (IllegalArgumentException e) {
-			assertEquals(JGitText.get().eitherGitDirOrWorkTreeRequired, e
-					.getMessage());
-		}
-	}
-
 	/**
 	 * Check the default rules for looking up directories and files within a
 	 * repo when the gitDir is given.

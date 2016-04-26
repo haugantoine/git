@@ -125,7 +125,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File dotGit = new File(dir, Constants.DOT_GIT);
 		new FileWriter(dotGit).append(
 				"gitdir: " + repo1.getDirectory().getAbsolutePath()).close();
-		Repository repo2 = Repository.createWorkTreeRepository(dir);
+		Repository repo2 = Repository.createWorkTreeRepository2(dir);
 
 		assertEquals(repo1.getDirectory().getAbsolutePath(), repo2
 				.getDirectory().getAbsolutePath());
@@ -142,7 +142,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		new FileWriter(dotGit).append("gitdir: ../" + Constants.DOT_GIT)
 				.close();
 
-		Repository repo2 = Repository.createWorkTreeRepository(dir);
+		Repository repo2 = Repository.createWorkTreeRepository2(dir);
 
 		// The tmp directory may be a symlink so the actual path
 		// may not
@@ -159,7 +159,7 @@ public class FileRepositoryBuilderTest extends LocalDiskRepositoryTestCase {
 		File dotGit = new File(dir, Constants.DOT_GIT);
 		new FileWriter(dotGit).append(
 				"gitdir: " + repo1.getDirectory().getAbsolutePath()).close();
-		Repository repo2 = Repository.createRepositoryMustExist(dir);
+		Repository repo2 = Repository.createWorkTreeRepository2(dir);
 
 		// The tmp directory may be a symlink
 		assertEquals(repo1.getDirectory().getCanonicalPath(), repo2

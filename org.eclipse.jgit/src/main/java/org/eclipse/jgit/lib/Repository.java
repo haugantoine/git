@@ -85,7 +85,6 @@ import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.errors.NoWorkTreeException;
-import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.errors.RevisionSyntaxException;
 import org.eclipse.jgit.events.IndexChangedEvent;
 import org.eclipse.jgit.events.IndexChangedListener;
@@ -218,10 +217,12 @@ public abstract class Repository implements AutoCloseable {
 			builder.setGitDir(gitDir);
 		if (bare) {
 			builder.setBare();
-			if (directory != null) {
+			if (directory == null) {
+				if (builder.getGitDir() == null) {
+					builder.setGitDir(getUserDirectory());
+				}
+			} else {
 				builder.setGitDir(directory);
-			} else if (builder.getGitDir() == null) {
-				builder.setGitDir(getUserDirectory());
 			}
 		} else {
 			if (directory == null) {
@@ -249,24 +250,6 @@ public abstract class Repository implements AutoCloseable {
 		return new File(dStr);
 	}
 
-	public static Repository createRepositoryMustExist(File dir)
-			throws IOException {
-		RepositoryBuilder builder = new RepositoryBuilder();
-		builder.setWorkTree(dir);
-		findGitDir(dir, builder);
-		setup(builder);
-		Repository repo = new FileRepository(builder);
-		if (!repo.getObjectDatabase().exists())
-			throw new RepositoryNotFoundException(builder.getGitDir());
-		return repo;
-	}
-
-	public static Repository createEmptyRepository() throws IOException {
-		RepositoryBuilder builder = new RepositoryBuilder();
-		setup(builder);
-		return new FileRepository(builder);
-	}
-
 	public static Repository createRepository(File gitdir, File workTree)
 			throws IOException {
 		RepositoryBuilder rb = new RepositoryBuilder();
@@ -289,34 +272,12 @@ public abstract class Repository implements AutoCloseable {
 		return new FileRepository(rb);
 	}
 
-	public static Repository createFileRepository(File file)
-			throws IOException {
-		RepositoryBuilder rb = new RepositoryBuilder(); //
-		rb.setGitDir(file);
-		setup(rb);
-		Repository repo = new FileRepository(rb);
-		if (!repo.getObjectDatabase().exists())
-			throw new RepositoryNotFoundException(rb.getGitDir());
-		return repo;
-	}
-
 	public static Repository createGitDirRepository(File dir)
 			throws IOException {
 		RepositoryBuilder rb = new RepositoryBuilder(); //
 		rb.setGitDir(dir);
 		setup(rb);
 		return new FileRepository(rb);
-	}
-
-	public static Repository createWorkTreeRepository(File dir)
-			throws IOException {
-		RepositoryBuilder builder = new RepositoryBuilder();
-		builder.setWorkTree(dir);
-		setup(builder);
-		Repository repo = new FileRepository(builder);
-		if (!repo.getObjectDatabase().exists())
-			throw new RepositoryNotFoundException(builder.getGitDir());
-		return repo;
 	}
 
 	public static Repository createWorkTreeRepository2(File worktree)
@@ -331,9 +292,7 @@ public abstract class Repository implements AutoCloseable {
 		RepositoryBuilder rb = new RepositoryBuilder();
 		if (RepositoryCache.FileKey.isGitRepository(dir))
 			rb.setGitDir(dir);
-		else
-			findGitDir(dir, rb);
-
+		findGitDir(dir, rb);
 		setup(rb);
 		return new FileRepository(rb);
 	}

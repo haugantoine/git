@@ -46,6 +46,7 @@ package org.eclipse.jgit.api;
 import java.io.File;
 import java.io.IOException;
 
+import org.eclipse.jgit.errors.RepositoryNotFoundException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryCache;
 
@@ -97,8 +98,10 @@ public class Git implements AutoCloseable {
 		RepositoryCache.FileKey key;
 
 		key = RepositoryCache.FileKey.lenient(dir);
-		Repository db = Repository.createFileRepository(key.getFile());
-		return new Git(db, true);
+		Repository repo = Repository.createGitDirRepository(key.getFile());
+		if (!repo.getObjectDatabase().exists())
+			throw new RepositoryNotFoundException(repo.getDirectory());
+		return new Git(repo, true);
 	}
 
 	/**

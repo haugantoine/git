@@ -225,11 +225,10 @@ public class SubmoduleWalk implements AutoCloseable {
 		if (!subWorkTree.isDirectory())
 			return null;
 		File workTree = new File(parent, path);
-		try {
-			return Repository.createWorkTreeRepository(workTree);
-		} catch (RepositoryNotFoundException e) {
+		Repository repo = Repository.createWorkTreeRepository2(workTree);
+		if (!repo.getObjectDatabase().exists())
 			return null;
-		}
+		return repo;
 	}
 
 	/**

@@ -96,7 +96,7 @@ public class AbbreviationTest {
 		System.out.println(gitdir.getPath());
 		db = new FileRepository(gitdir);
 		assertFalse(gitdir.exists());
-		db.create(true);
+		db.create();
 		reader = db.newObjectReader();
 		test = new TestRepository<Repository>(db);
 	}

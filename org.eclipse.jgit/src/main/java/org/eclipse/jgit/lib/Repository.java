@@ -199,52 +199,51 @@ public abstract class Repository implements AutoCloseable {
 	}
 
 	public static File getGitDir(File dir) {
-		RepositoryBuilder rb = new RepositoryBuilder(); //
-		rb.setGitDir(dir);
-		readEnvironment(rb); //
-		if (rb.getGitDir() == null)
-			findGitDir(new File("").getAbsoluteFile(), rb); //$NON-NLS-1$
-		return rb.getGitDir();
+		Repository r = new FileRepository(); //
+		r.setGitDirRB(dir);
+		r.readEnvironment(); //
+		if (r.getGitDirRB() == null)
+			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
+		return r.getGitDirRB();
 	}
 
 	public static Repository createRepository(File directory, File gitDir,
 			boolean bare) throws IOException {
-		RepositoryBuilder builder = new RepositoryBuilder();
-		readEnvironment(builder);
+		Repository r = new FileRepository(); //
+		r.readEnvironment();
 		if (gitDir == null)
-			gitDir = builder.getGitDir();
+			gitDir = r.getGitDirRB();
 		else
-			builder.setGitDir(gitDir);
+			r.setGitDirRB(gitDir);
 		if (bare) {
-			builder.setBare();
+			r.setBareRB();
 			if (directory == null) {
-				if (builder.getGitDir() == null) {
-					builder.setGitDir(getUserDirectory());
+				if (r.getGitDirRB() == null) {
+					r.setGitDirRB(getUserDirectory());
 				}
 			} else {
-				builder.setGitDir(directory);
+				r.setGitDirRB(directory);
 			}
 		} else {
 			if (directory == null) {
-				if (builder.getGitDir() == null) {
+				if (r.getGitDirRB() == null) {
 					File d = new File(getUserDirectory(), Constants.DOT_GIT);
-					builder.setGitDir(d);
+					r.setGitDirRB(d);
 				} else {
-					builder.setWorkTree(getUserDirectory());
+					r.setWorkTreeRB(getUserDirectory());
 				}
 			} else {
-				builder.setWorkTree(directory);
+				r.setWorkTreeRB(directory);
 				if (gitDir == null)
-					builder.setGitDir(new File(directory, Constants.DOT_GIT));
+					r.setGitDirRB(new File(directory, Constants.DOT_GIT));
 			}
 		}
-		setup(builder);
-		return new FileRepository(builder);
+		r.setup();
+		return r;
 	}
 
 	private static File getUserDirectory() {
-		String dStr = SystemReader.getInstance()
-				.getProperty("user.dir"); //$NON-NLS-1$
+		String dStr = SystemReader.getInstance().getProperty("user.dir"); //$NON-NLS-1$
 		if (dStr == null)
 			dStr = "."; //$NON-NLS-1$
 		return new File(dStr);
@@ -252,60 +251,60 @@ public abstract class Repository implements AutoCloseable {
 
 	public static Repository createRepository(File gitdir, File workTree)
 			throws IOException {
-		RepositoryBuilder rb = new RepositoryBuilder();
-		rb.setGitDir(gitdir);
-		rb.setWorkTree(workTree);
-		setup(rb);
-		return new FileRepository(rb);
+		Repository r = new FileRepository(); //
+		r.setGitDirRB(gitdir);
+		r.setWorkTreeRB(workTree);
+		r.setup();
+		return r;
 	}
 
 	public static Repository createGitDirEnvRepository(File file)
 			throws IOException {
-		RepositoryBuilder rb = new RepositoryBuilder(); //
-		rb.setGitDir(file); //
-		readEnvironment(rb); //
-		if (rb.getGitDir() == null)
-			findGitDir(new File("").getAbsoluteFile(), rb); //$NON-NLS-1$
-		if (rb.getGitDir() == null)
+		Repository r = new FileRepository(); //
+		r.setGitDirRB(file); //
+		r.readEnvironment(); //
+		if (r.getGitDirRB() == null)
+			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
+		if (r.getGitDirRB() == null)
 			throw new IOException();
-		setup(rb);
-		return new FileRepository(rb);
+		r.setup();
+		return r;
 	}
 
 	public static Repository createGitDirRepository(File dir)
 			throws IOException {
-		RepositoryBuilder rb = new RepositoryBuilder(); //
-		rb.setGitDir(dir);
-		setup(rb);
-		return new FileRepository(rb);
+		Repository r = new FileRepository(); //
+		r.setGitDirRB(dir);
+		r.setup();
+		return r;
 	}
 
 	public static Repository createWorkTreeRepository2(File worktree)
 			throws IOException {
-		RepositoryBuilder builder = new RepositoryBuilder();
-		builder.setWorkTree(worktree);
-		setup(builder);
-		return new FileRepository(builder);
+		Repository r = new FileRepository(); //
+		r.setWorkTreeRB(worktree);
+		r.setup();
+		return r;
 	}
 
 	public static Repository createGitDirRepo(File dir) throws IOException {
-		RepositoryBuilder rb = new RepositoryBuilder();
+		Repository r = new FileRepository(); //
 		if (RepositoryCache.FileKey.isGitRepository(dir))
-			rb.setGitDir(dir);
-		findGitDir(dir, rb);
-		setup(rb);
-		return new FileRepository(rb);
+			r.setGitDirRB(dir);
+		r.findGitDir(dir);
+		r.setup();
+		return r;
 	}
 
 	public static FileRepository createRepository(File indexFile, File objDir,
 			File altObjDir, File theDir) throws IOException {
-		RepositoryBuilder r = new RepositoryBuilder(); //
-		r.setGitDir(theDir);//
-		r.setObjectDirectory(objDir); //
-		r.addAlternateObjectDirectory(altObjDir); //
-		r.setIndexFile(indexFile); //
-		setup(r);
-		return new FileRepository(r);
+		FileRepository r = new FileRepository(); //
+		r.setGitDirRB(theDir);//
+		r.setObjectDirectoryRB(objDir); //
+		r.addAlternateObjectDirectoryRB(altObjDir); //
+		r.setIndexFileRB(indexFile); //
+		r.setup();
+		return r;
 	}
 
 	/** @return the global listener list observing all events in this JVM. */
@@ -316,15 +315,30 @@ public abstract class Repository implements AutoCloseable {
 	private final AtomicInteger useCnt = new AtomicInteger(1);
 
 	/** Metadata directory holding the repository's critical files. */
-	private final File gitDir;
+	protected File gitDir;
 
 	private final ListenerList myListeners = new ListenerList();
 
 	/** If not bare, the top level directory of the working files. */
-	private File workTree;
+	protected File workTree;
 
 	/** If not bare, the index file caching the working file states. */
-	private final File indexFile;
+	protected File indexFile;
+
+	private File objectDirectory;
+
+	private List<File> alternateObjectDirectories;
+
+	/** Directories limiting the search for a Git repository. */
+	private List<File> ceilingDirectories;
+
+	/** True only if the caller wants to force bare behavior. */
+	private boolean bare;
+
+	/**
+	 * Configuration file of target repository, lazily loaded if required.
+	 */
+	private Config config;
 
 	/**
 	 * Initialize a new repository instance.
@@ -333,19 +347,6 @@ public abstract class Repository implements AutoCloseable {
 	 *            options to configure the repository.
 	 */
 	protected Repository() {
-		this(null, null, null);
-	}
-
-	/**
-	 * Initialize a new repository instance.
-	 *
-	 * @param options
-	 *            options to configure the repository.
-	 */
-	protected Repository(File gitDir, File workTree, File indexFile) {
-		this.gitDir = gitDir;
-		this.workTree = workTree;
-		this.indexFile = indexFile;
 	}
 
 	/** @return listeners observing only events on this repository. */
@@ -379,7 +380,7 @@ public abstract class Repository implements AutoCloseable {
 	 * @see #create(boolean)
 	 */
 	public void create() throws IOException {
-		create(false);
+		create(bare);
 	}
 
 	/**
@@ -2020,45 +2021,45 @@ public abstract class Repository implements AutoCloseable {
 	 *
 	 * @return {@code this} (for chaining calls).
 	 */
-	public static void readEnvironment(RepositoryBuilder builder) {
+	public void readEnvironment() {
 		SystemReader sr = SystemReader.getInstance();
-		if (builder.getGitDir() == null) {
+		if (getGitDirRB() == null) {
 			String val = sr.getenv(GIT_DIR_KEY);
 			if (val != null)
-				builder.setGitDir(new File(val));
+				setGitDirRB(new File(val));
 		}
 
-		if (builder.getObjectDirectory() == null) {
+		if (getObjectDirectoryRB() == null) {
 			String val = sr.getenv(GIT_OBJECT_DIRECTORY_KEY);
 			if (val != null)
-				builder.setObjectDirectory(new File(val));
+				setObjectDirectoryRB(new File(val));
 		}
 
-		if (builder.getAlternateObjectDirectories() == null) {
+		if (getAlternateObjectDirectoriesRB() == null) {
 			String val = sr.getenv(GIT_ALTERNATE_OBJECT_DIRECTORIES_KEY);
 			if (val != null) {
 				for (String path : val.split(File.pathSeparator))
-					builder.addAlternateObjectDirectory(new File(path));
+					addAlternateObjectDirectoryRB(new File(path));
 			}
 		}
 
-		if (builder.getWorkTree() == null) {
+		if (getWorkTreeRB() == null) {
 			String val = sr.getenv(GIT_WORK_TREE_KEY);
 			if (val != null)
-				builder.setWorkTree(new File(val));
+				setWorkTreeRB(new File(val));
 		}
 
-		if (builder.getIndexFile() == null) {
+		if (getIndexFileRB() == null) {
 			String val = sr.getenv(GIT_INDEX_FILE_KEY);
 			if (val != null)
-				builder.setIndexFile(new File(val));
+				setIndexFileRB(new File(val));
 		}
 
-		if (builder.ceilingDirectories == null) {
+		if (ceilingDirectories == null) {
 			String val = sr.getenv(GIT_CEILING_DIRECTORIES_KEY);
 			if (val != null) {
 				for (String path : val.split(File.pathSeparator))
-					builder.addCeilingDirectory(new File(path));
+					addCeilingDirectoryRB(new File(path));
 			}
 		}
 
@@ -2079,28 +2080,28 @@ public abstract class Repository implements AutoCloseable {
 	 *            directory to begin searching in.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public static void findGitDir(File current, RepositoryBuilder builder) {
-		if (builder.getGitDir() == null) {
+	public void findGitDir(File current) {
+		if (getGitDirRB() == null) {
 			while (current != null) {
 				File dir = new File(current, DOT_GIT);
 				if (FileKey.isGitRepository(dir)) {
-					builder.setGitDir(dir);
+					setGitDirRB(dir);
 					break;
 				} else if (dir.isFile()) {
 					try {
-						builder.setGitDir(getSymRef(current, dir));
+						setGitDirRB(getSymRef(current, dir));
 						break;
 					} catch (IOException ignored) {
 						// Continue searching if gitdir ref isn't found
 					}
 				} else if (FileKey.isGitRepository(current)) {
-					builder.setGitDir(current);
+					setGitDirRB(current);
 					break;
 				}
 
 				current = current.getParentFile();
-				if (current != null && builder.ceilingDirectories != null
-						&& builder.ceilingDirectories.contains(current))
+				if (current != null && ceilingDirectories != null
+						&& ceilingDirectories.contains(current))
 					break;
 			}
 		}
@@ -2121,39 +2122,37 @@ public abstract class Repository implements AutoCloseable {
 	 *             the repository could not be accessed to configure the rest of
 	 *             the builder's parameters.
 	 */
-	public static void setup(RepositoryBuilder builder)
-			throws IllegalArgumentException, IOException {
-		if (builder.getGitDir() == null && builder.getWorkTree() == null)
+	public void setup() throws IllegalArgumentException, IOException {
+		if (getGitDirRB() == null && getWorkTreeRB() == null)
 			throw new IllegalArgumentException(
 					JGitText.get().eitherGitDirOrWorkTreeRequired);
 		// No gitDir? Try to assume its under the workTree or a ref to
 		// another
 		// location
-		if (builder.getGitDir() == null && builder.getWorkTree() != null) {
-			File dotGit = new File(builder.getWorkTree(), DOT_GIT);
+		if (getGitDirRB() == null && getWorkTreeRB() != null) {
+			File dotGit = new File(getWorkTreeRB(), DOT_GIT);
 			if (dotGit.isFile())
-				builder.setGitDir(getSymRef(builder.getWorkTree(), dotGit));
+				setGitDirRB(getSymRef(getWorkTreeRB(), dotGit));
 			else
-				builder.setGitDir(dotGit);
+				setGitDirRB(dotGit);
 		}
 		// If we aren't bare, we should have a work tree.
 		//
-		if (!builder.isBare() && builder.getWorkTree() == null)
-			builder.workTree = guessWorkTreeOrFail(builder);
+		if (!isBareRB() && getWorkTreeRB() == null)
+			workTree = guessWorkTreeOrFail();
 
-		if (!builder.isBare()) {
+		if (!isBareRB()) {
 			// If after guessing we're still not bare, we must have
 			// a metadata directory to hold the repository. Assume
 			// its at the work tree.
 			//
-			if (builder.getGitDir() == null)
-				builder.setGitDir(builder.getWorkTree().getParentFile());
-			if (builder.getIndexFile() == null)
-				builder.setIndexFile(new File(builder.getGitDir(), "index")); //$NON-NLS-1$
+			if (getGitDirRB() == null)
+				setGitDirRB(getWorkTreeRB().getParentFile());
+			if (getIndexFileRB() == null)
+				setIndexFileRB(new File(getGitDirRB(), "index")); //$NON-NLS-1$
 		}
-		if (builder.getObjectDirectory() == null && builder.getGitDir() != null)
-			builder.setObjectDirectory(
-					FS.DETECTED.resolve(builder.getGitDir(), "objects")); //$NON-NLS-1$
+		if (getObjectDirectoryRB() == null && getGitDirRB() != null)
+			setObjectDirectoryRB(FS.DETECTED.resolve(getGitDirRB(), "objects")); //$NON-NLS-1$
 	}
 
 	/**
@@ -2166,16 +2165,15 @@ public abstract class Repository implements AutoCloseable {
 	 * @throws IOException
 	 *             the configuration is not available.
 	 */
-	protected static Config loadConfig(RepositoryBuilder builder)
-			throws IOException {
-		if (builder.getGitDir() == null) {
+	protected Config loadConfig() throws IOException {
+		if (getGitDirRB() == null) {
 			return new Config();
 		}
 		// We only want the repository's configuration file, and not
 		// the user file, as these parameters must be unique to this
 		// repository and not inherited from other files.
 		//
-		File path = FS.DETECTED.resolve(builder.getGitDir(), Constants.CONFIG);
+		File path = FS.DETECTED.resolve(getGitDirRB(), Constants.CONFIG);
 		FileBasedConfig cfg = new FileBasedConfig(path);
 		try {
 			cfg.load();
@@ -2187,224 +2185,181 @@ public abstract class Repository implements AutoCloseable {
 		return cfg;
 	}
 
-	private static File guessWorkTreeOrFail(RepositoryBuilder builder)
-			throws IOException {
-		if (builder.config == null)
-			builder.config = loadConfig(builder);
-		final Config cfg = builder.config;
+	private File guessWorkTreeOrFail() throws IOException {
+		if (config == null)
+			config = loadConfig();
+		final Config cfg = config;
 
 		// If set, core.worktree wins.
 		//
 		String path = cfg.getString(CONFIG_CORE_SECTION, null,
 				CONFIG_KEY_WORKTREE);
 		if (path != null)
-			return FS.DETECTED.resolve(builder.getGitDir(), path)
-					.getCanonicalFile();
+			return FS.DETECTED.resolve(getGitDirRB(), path).getCanonicalFile();
 
 		// If core.bare is set, honor its value. Assume workTree is
 		// the parent directory of the repository.
 		//
 		if (cfg.getString(CONFIG_CORE_SECTION, null, CONFIG_KEY_BARE) != null) {
 			if (cfg.getBoolean(CONFIG_CORE_SECTION, CONFIG_KEY_BARE, true)) {
-				builder.setBare();
+				setBareRB();
 				return null;
 			}
-			return builder.getGitDir().getParentFile();
+			return getGitDirRB().getParentFile();
 		}
 
-		if (builder.getGitDir().getName().equals(DOT_GIT)) {
+		if (getGitDirRB().getName().equals(DOT_GIT)) {
 			// No value for the "bare" flag, but gitDir is named ".git",
 			// use the parent of the directory
 			//
-			return builder.getGitDir().getParentFile();
+			return getGitDirRB().getParentFile();
 		}
 
 		// We have to assume we are bare.
 		//
-		builder.setBare();
+		setBareRB();
 		return null;
 	}
 
 	/**
-	 * Base builder to customize repository construction.
+	 * Set the Git directory storing the repository metadata.
 	 * <p>
-	 * Repository implementations may subclass this builder in order to add
-	 * custom repository detection methods.
+	 * The meta directory stores the objects, references, and meta files like
+	 * {@code MERGE_HEAD}, or the index file. If {@code null} the path is
+	 * assumed to be {@code workTree/.git}.
 	 *
-	 * @param <B>
-	 *            type of the repository builder.
-	 * @param <R>
-	 *            type of the repository that is constructed.
-	 * @see RepositoryBuilder
-	 * @see FileRepositoryBuilder
+	 * @param gitDir
+	 *            {@code GIT_DIR}, the repository meta directory.
+	 * @return {@code this} (for chaining calls).
 	 */
-	public static class RepositoryBuilder {
-		private File gitDir;
-
-		private File objectDirectory;
-
-		private List<File> alternateObjectDirectories;
-
-		private File indexFile;
-
-		private File workTree;
-
-		/** Directories limiting the search for a Git repository. */
-		private List<File> ceilingDirectories;
-
-		/** True only if the caller wants to force bare behavior. */
-		private boolean bare;
-
-		/**
-		 * Configuration file of target repository, lazily loaded if required.
-		 */
-		private Config config;
-
-		/**
-		 * Set the Git directory storing the repository metadata.
-		 * <p>
-		 * The meta directory stores the objects, references, and meta files
-		 * like {@code MERGE_HEAD}, or the index file. If {@code null} the path
-		 * is assumed to be {@code workTree/.git}.
-		 *
-		 * @param gitDir
-		 *            {@code GIT_DIR}, the repository meta directory.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void setGitDir(File gitDir) {
-			this.gitDir = gitDir;
-			this.config = null;
-		}
-
-		/** @return the meta data directory; null if not set. */
-		public File getGitDir() {
-			return gitDir;
-		}
-
-		/**
-		 * Set the directory storing the repository's objects.
-		 *
-		 * @param objectDirectory
-		 *            {@code GIT_OBJECT_DIRECTORY}, the directory where the
-		 *            repository's object files are stored.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void setObjectDirectory(File objectDirectory) {
-			this.objectDirectory = objectDirectory;
-		}
-
-		/** @return the object directory; null if not set. */
-		public File getObjectDirectory() {
-			return objectDirectory;
-		}
-
-		/**
-		 * Add an alternate object directory to the search list.
-		 * <p>
-		 * This setting handles one alternate directory at a time, and is
-		 * provided to support {@code GIT_ALTERNATE_OBJECT_DIRECTORIES}.
-		 *
-		 * @param other
-		 *            another objects directory to search after the standard
-		 *            one.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void addAlternateObjectDirectory(File other) {
-			if (other != null) {
-				if (alternateObjectDirectories == null)
-					alternateObjectDirectories = new LinkedList<File>();
-				alternateObjectDirectories.add(other);
-			}
-		}
-
-		/**
-		 * @return ordered array of alternate directories; null if non were set.
-		 */
-		public File[] getAlternateObjectDirectories() {
-			if (alternateObjectDirectories == null)
-				return null;
-			return alternateObjectDirectories
-					.toArray(new File[alternateObjectDirectories.size()]);
-		}
-
-		/**
-		 * Force the repository to be treated as bare (have no working
-		 * directory).
-		 * <p>
-		 * If bare the working directory aspects of the repository won't be
-		 * configured, and will not be accessible.
-		 *
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void setBare() {
-			setIndexFile(null);
-			setWorkTree(null);
-			bare = true;
-		}
-
-		/**
-		 * @return true if this repository was forced bare by {@link #setBare()}
-		 *         .
-		 */
-		public boolean isBare() {
-			return bare;
-		}
-
-		/**
-		 * Set the top level directory of the working files.
-		 *
-		 * @param workTree
-		 *            {@code GIT_WORK_TREE}, the working directory of the
-		 *            checkout.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void setWorkTree(File workTree) {
-			this.workTree = workTree;
-		}
-
-		/** @return the work tree directory, or null if not set. */
-		public File getWorkTree() {
-			return workTree;
-		}
-
-		/**
-		 * Set the local index file that is caching checked out file status.
-		 * <p>
-		 * The location of the index file tracking the status information for
-		 * each checked out file in {@code workTree}. This may be null to assume
-		 * the default {@code gitDiir/index}.
-		 *
-		 * @param indexFile
-		 *            {@code GIT_INDEX_FILE}, the index file location.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void setIndexFile(File indexFile) {
-			this.indexFile = indexFile;
-		}
-
-		/** @return the index file location, or null if not set. */
-		public File getIndexFile() {
-			return indexFile;
-		}
-
-		/**
-		 * Add a ceiling directory to the search limit list.
-		 * <p>
-		 * This setting handles one ceiling directory at a time, and is provided
-		 * to support {@code GIT_CEILING_DIRECTORIES}.
-		 *
-		 * @param root
-		 *            a path to stop searching at; its parent will not be
-		 *            searched.
-		 * @return {@code this} (for chaining calls).
-		 */
-		public void addCeilingDirectory(File root) {
-			if (root != null) {
-				if (ceilingDirectories == null)
-					ceilingDirectories = new LinkedList<File>();
-				ceilingDirectories.add(root);
-			}
-		}
-
+	public void setGitDirRB(File gitDir) {
+		this.gitDir = gitDir;
+		this.config = null;
 	}
+
+	/** @return the meta data directory; null if not set. */
+	public File getGitDirRB() {
+		return gitDir;
+	}
+
+	/**
+	 * Set the directory storing the repository's objects.
+	 *
+	 * @param objectDirectory
+	 *            {@code GIT_OBJECT_DIRECTORY}, the directory where the
+	 *            repository's object files are stored.
+	 * @return {@code this} (for chaining calls).
+	 */
+	public void setObjectDirectoryRB(File objectDirectory) {
+		this.objectDirectory = objectDirectory;
+	}
+
+	/** @return the object directory; null if not set. */
+	public File getObjectDirectoryRB() {
+		return objectDirectory;
+	}
+
+	/**
+	 * Add an alternate object directory to the search list.
+	 * <p>
+	 * This setting handles one alternate directory at a time, and is provided
+	 * to support {@code GIT_ALTERNATE_OBJECT_DIRECTORIES}.
+	 *
+	 * @param other
+	 *            another objects directory to search after the standard one.
+	 * @return {@code this} (for chaining calls).
+	 */
+	public void addAlternateObjectDirectoryRB(File other) {
+		if (other != null) {
+			if (alternateObjectDirectories == null)
+				alternateObjectDirectories = new LinkedList<File>();
+			alternateObjectDirectories.add(other);
+		}
+	}
+
+	/**
+	 * @return ordered array of alternate directories; null if non were set.
+	 */
+	public File[] getAlternateObjectDirectoriesRB() {
+		if (alternateObjectDirectories == null)
+			return null;
+		return alternateObjectDirectories
+				.toArray(new File[alternateObjectDirectories.size()]);
+	}
+
+	/**
+	 * Force the repository to be treated as bare (have no working directory).
+	 * <p>
+	 * If bare the working directory aspects of the repository won't be
+	 * configured, and will not be accessible.
+	 *
+	 * @return {@code this} (for chaining calls).
+	 */
+	public void setBareRB() {
+		setIndexFileRB(null);
+		setWorkTreeRB(null);
+		bare = true;
+	}
+
+	/**
+	 * @return true if this repository was forced bare by {@link #setBare()} .
+	 */
+	public boolean isBareRB() {
+		return bare;
+	}
+
+	/**
+	 * Set the top level directory of the working files.
+	 *
+	 * @param workTree
+	 *            {@code GIT_WORK_TREE}, the working directory of the checkout.
+	 * @return {@code this} (for chaining calls).
+	 */
+	public void setWorkTreeRB(File workTree) {
+		this.workTree = workTree;
+	}
+
+	/** @return the work tree directory, or null if not set. */
+	public File getWorkTreeRB() {
+		return workTree;
+	}
+
+	/**
+	 * Set the local index file that is caching checked out file status.
+	 * <p>
+	 * The location of the index file tracking the status information for each
+	 * checked out file in {@code workTree}. This may be null to assume the
+	 * default {@code gitDiir/index}.
+	 *
+	 * @param indexFile
+	 *            {@code GIT_INDEX_FILE}, the index file location.
+	 * @return {@code this} (for chaining calls).
+	 */
+	public void setIndexFileRB(File indexFile) {
+		this.indexFile = indexFile;
+	}
+
+	/** @return the index file location, or null if not set. */
+	public File getIndexFileRB() {
+		return indexFile;
+	}
+
+	/**
+	 * Add a ceiling directory to the search limit list.
+	 * <p>
+	 * This setting handles one ceiling directory at a time, and is provided to
+	 * support {@code GIT_CEILING_DIRECTORIES}.
+	 *
+	 * @param root
+	 *            a path to stop searching at; its parent will not be searched.
+	 * @return {@code this} (for chaining calls).
+	 */
+	public void addCeilingDirectoryRB(File root) {
+		if (root != null) {
+			if (ceilingDirectories == null)
+				ceilingDirectories = new LinkedList<File>();
+			ceilingDirectories.add(root);
+		}
+	}
+
 }

@@ -75,7 +75,7 @@ public class InitCommand implements Callable<Git> {
 			Repository repository = Repository.createRepository(directory,
 					gitDir, bare);
 			if (!repository.getObjectDatabase().exists())
-				repository.create(bare);
+				repository.create();
 			return new Git(repository);
 		} catch (IOException e) {
 			throw new JGitInternalException(e.getMessage(), e);

@@ -58,8 +58,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.EmptyProgressMonitor;
 import org.eclipse.jgit.revwalk.RevBlob;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class GcConcurrentTest extends GcTestCase {
 	@Test
 	public void concurrentRepack() throws Exception {
@@ -110,7 +112,9 @@ public class GcConcurrentTest extends GcTestCase {
 			DoRepack repack2 = new DoRepack();
 			Future<Integer> result1 = pool.submit(repack1);
 			Future<Integer> result2 = pool.submit(repack2);
-			assertEquals(0, result1.get().intValue() + result2.get().intValue());
+			int intValue = result1.get().intValue();
+			int intValue2 = result2.get().intValue();
+			assertEquals(0, intValue + intValue2);
 		} finally {
 			pool.shutdown();
 			pool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);

@@ -108,17 +108,21 @@ import org.eclipse.jgit.util.SystemReader;
  *
  */
 public class FileRepository extends Repository {
-	private final FileBasedConfig systemConfig;
+	private FileBasedConfig systemConfig;
 
-	private final FileBasedConfig userConfig;
+	private FileBasedConfig userConfig;
 
-	private final FileBasedConfig repoConfig;
+	private FileBasedConfig repoConfig;
 
-	private final RefDatabase refs;
+	private RefDatabase refs;
 
-	private final ObjectDirectory objectDatabase;
+	private ObjectDirectory objectDatabase;
 
 	private FileSnapshot snapshot;
+
+	public FileRepository() {
+		super();
+	}
 
 	/**
 	 * Construct a representation of a Git repository.
@@ -140,15 +144,9 @@ public class FileRepository extends Repository {
 	 * @see FileRepositoryBuilder
 	 */
 	public FileRepository(final File gitDir) throws IOException {
-		this(createRepositoryBuilder(gitDir));
-	}
-
-	private static RepositoryBuilder createRepositoryBuilder(final File gitDir)
-			throws IllegalArgumentException, IOException {
-		RepositoryBuilder rb = new RepositoryBuilder();
-		rb.setGitDir(gitDir);
-		setup(rb);
-		return rb;
+		this();
+		this.gitDir = gitDir;
+		setup();
 	}
 
 	/**
@@ -174,9 +172,8 @@ public class FileRepository extends Repository {
 	 *             the user configuration file or repository configuration file
 	 *             cannot be accessed.
 	 */
-	public FileRepository(final RepositoryBuilder options) throws IOException {
-		super(options.getGitDir(), options.getWorkTree(),
-				options.getIndexFile());
+	public void setup() throws IOException {
+		super.setup();
 
 		if (StringUtils.isEmptyOrNull(SystemReader.getInstance().getenv(
 				Constants.GIT_CONFIG_NOSYSTEM_KEY)))
@@ -224,8 +221,8 @@ public class FileRepository extends Repository {
 		}
 
 		objectDatabase = new ObjectDirectory(repoConfig, //
-				options.getObjectDirectory(), //
-				options.getAlternateObjectDirectories(), //
+				getObjectDirectoryRB(), //
+				getAlternateObjectDirectoriesRB(), //
 				new File(getDirectory(), Constants.SHALLOW));
 
 		if (objectDatabase.exists() && repositoryFormatVersion > 1)
@@ -292,7 +289,7 @@ public class FileRepository extends Repository {
 				ConfigConstants.CONFIG_CORE_SECTION, null,
 				ConfigConstants.CONFIG_KEY_HIDEDOTFILES,
 				HideDotFiles.DOTGITONLY);
-		if (hideDotFiles != HideDotFiles.FALSE && !isBare()
+		if (hideDotFiles != HideDotFiles.FALSE && !bare
 				&& getDirectory().getName().startsWith(".")) //$NON-NLS-1$
 			FS.DETECTED.setHidden(getDirectory(), true);
 		refs.create();

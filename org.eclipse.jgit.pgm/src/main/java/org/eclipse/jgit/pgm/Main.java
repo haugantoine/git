@@ -57,6 +57,7 @@ import java.util.List;
 import org.eclipse.jgit.awtui.AwtAuthenticator;
 import org.eclipse.jgit.awtui.AwtCredentialsProvider;
 import org.eclipse.jgit.errors.TransportException;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.pgm.internal.CLIText;
 import org.eclipse.jgit.pgm.opt.CmdLineParser;
@@ -284,7 +285,7 @@ public class Main {
 	 */
 	protected Repository openGitDir(String aGitdir) throws IOException {
 		try {
-		return Repository.createGitDirEnvRepository(
+		return FileRepository.createGitDirEnvRepository(
 				aGitdir != null ? new File(aGitdir) : null);
 		} catch (IOException e) {
 			throw new Die(CLIText.get().cantFindGitDirectory);

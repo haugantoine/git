@@ -120,6 +120,75 @@ import org.eclipse.jgit.util.io.SafeBufferedOutputStream;
 public abstract class Repository implements AutoCloseable {
 	private static final ListenerList globalListeners = new ListenerList();
 
+	/**
+	 * @param refName
+	 *
+	 * @return a more user friendly ref name
+	 */
+	@NonNull
+	public static String shortenRefName(String refName) {
+		if (refName.startsWith(Constants.R_HEADS))
+			return refName.substring(Constants.R_HEADS.length());
+		if (refName.startsWith(Constants.R_TAGS))
+			return refName.substring(Constants.R_TAGS.length());
+		if (refName.startsWith(Constants.R_REMOTES))
+			return refName.substring(Constants.R_REMOTES.length());
+		return refName;
+	}
+
+	/**
+	 * Strip work dir and return normalized repository path.
+	 *
+	 * @param workDir
+	 *            Work dir
+	 * @param file
+	 *            File whose path shall be stripped of its workdir
+	 * @return normalized repository relative path or the empty string if the
+	 *         file is not relative to the work directory.
+	 */
+	@NonNull
+	public static String stripWorkDir(File workDir, File file) {
+		final String filePath = file.getPath();
+		final String workDirPath = workDir.getPath();
+
+		if (filePath.length() > workDirPath.length()
+				&& filePath.charAt(workDirPath.length()) == File.separatorChar
+				&& filePath.startsWith(workDirPath)) {
+			String relName = filePath.substring(workDirPath.length() + 1);
+			if (File.separatorChar != '/')
+				relName = relName.replace(File.separatorChar, '/');
+			return relName;
+		}
+		File absWd = workDir.isAbsolute() ? workDir : workDir.getAbsoluteFile();
+		File absFile = file.isAbsolute() ? file : file.getAbsoluteFile();
+		if (absWd == workDir && absFile == file)
+			return ""; //$NON-NLS-1$
+		return stripWorkDir(absWd, absFile);
+	}
+
+	static byte[] gitInternalSlash(byte[] bytes) {
+		if (File.separatorChar == '/')
+			return bytes;
+		for (int i = 0; i < bytes.length; ++i)
+			if (bytes[i] == File.separatorChar)
+				bytes[i] = '/';
+		return bytes;
+	}
+
+	private static boolean isHex(char c) {
+		return ('0' <= c && c <= '9') //
+				|| ('a' <= c && c <= 'f') //
+				|| ('A' <= c && c <= 'F');
+	}
+
+	private static boolean isAllHex(String str, int ptr) {
+		while (ptr < str.length()) {
+			if (!isHex(str.charAt(ptr++)))
+				return false;
+		}
+		return true;
+	}
+
 	private static boolean isSymRef(byte[] ref) {
 		return ref.length >= 9 //
 				&& ref[0] == 'g' //
@@ -153,6 +222,75 @@ public abstract class Repository implements AutoCloseable {
 		if (gitdirFile.isAbsolute())
 			return gitdirFile;
 		return new File(workTree, gitdirPath).getCanonicalFile();
+	}
+
+	/**
+	 * Check validity of a ref name. It must not contain character that has a
+	 * special meaning in a Git object reference expression. Some other
+	 * dangerous characters are also excluded.
+	 *
+	 * For portability reasons '\' is excluded
+	 *
+	 * @param refName
+	 *
+	 * @return true if refName is a valid ref name
+	 */
+	public static boolean isValidRefName(final String refName) {
+		final int len = refName.length();
+		if (len == 0)
+			return false;
+		if (refName.endsWith(".lock")) //$NON-NLS-1$
+			return false;
+
+		// Refs may be stored as loose files so invalid paths
+		// on the local system must also be invalid refs.
+		try {
+			SystemReader.getInstance().checkPath(refName);
+		} catch (CorruptObjectException e) {
+			return false;
+		}
+
+		int components = 1;
+		char p = '\0';
+		for (int i = 0; i < len; i++) {
+			final char c = refName.charAt(i);
+			if (c <= ' ')
+				return false;
+			switch (c) {
+			case '.':
+				switch (p) {
+				case '\0':
+				case '/':
+				case '.':
+					return false;
+				}
+				if (i == len - 1)
+					return false;
+				break;
+			case '/':
+				if (i == 0 || i == len - 1)
+					return false;
+				if (p == '/')
+					return false;
+				components++;
+				break;
+			case '{':
+				if (p == '@')
+					return false;
+				break;
+			case '~':
+			case '^':
+			case ':':
+			case '?':
+			case '[':
+			case '*':
+			case '\\':
+			case '\u007F':
+				return false;
+			}
+			p = c;
+		}
+		return components > 1;
 	}
 
 	public static File getAutomagicallyDetectGitDirectory(File d) {
@@ -207,104 +345,11 @@ public abstract class Repository implements AutoCloseable {
 		return r.getGitDirRB();
 	}
 
-	public static Repository createRepository(File directory, File gitDir,
-			boolean bare) throws IOException {
-		Repository r = new FileRepository(); //
-		r.readEnvironment();
-		if (gitDir == null)
-			gitDir = r.getGitDirRB();
-		else
-			r.setGitDirRB(gitDir);
-		if (bare) {
-			r.setBareRB();
-			if (directory == null) {
-				if (r.getGitDirRB() == null) {
-					r.setGitDirRB(getUserDirectory());
-				}
-			} else {
-				r.setGitDirRB(directory);
-			}
-		} else {
-			if (directory == null) {
-				if (r.getGitDirRB() == null) {
-					File d = new File(getUserDirectory(), Constants.DOT_GIT);
-					r.setGitDirRB(d);
-				} else {
-					r.setWorkTreeRB(getUserDirectory());
-				}
-			} else {
-				r.setWorkTreeRB(directory);
-				if (gitDir == null)
-					r.setGitDirRB(new File(directory, Constants.DOT_GIT));
-			}
-		}
-		r.setup();
-		return r;
-	}
-
-	private static File getUserDirectory() {
+	protected static File getUserDirectory() {
 		String dStr = SystemReader.getInstance().getProperty("user.dir"); //$NON-NLS-1$
 		if (dStr == null)
 			dStr = "."; //$NON-NLS-1$
 		return new File(dStr);
-	}
-
-	public static Repository createRepository(File gitdir, File workTree)
-			throws IOException {
-		Repository r = new FileRepository(); //
-		r.setGitDirRB(gitdir);
-		r.setWorkTreeRB(workTree);
-		r.setup();
-		return r;
-	}
-
-	public static Repository createGitDirEnvRepository(File file)
-			throws IOException {
-		Repository r = new FileRepository(); //
-		r.setGitDirRB(file); //
-		r.readEnvironment(); //
-		if (r.getGitDirRB() == null)
-			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
-		if (r.getGitDirRB() == null)
-			throw new IOException();
-		r.setup();
-		return r;
-	}
-
-	public static Repository createGitDirRepository(File dir)
-			throws IOException {
-		Repository r = new FileRepository(); //
-		r.setGitDirRB(dir);
-		r.setup();
-		return r;
-	}
-
-	public static Repository createWorkTreeRepository2(File worktree)
-			throws IOException {
-		Repository r = new FileRepository(); //
-		r.setWorkTreeRB(worktree);
-		r.setup();
-		return r;
-	}
-
-	public static Repository createGitDirRepo(File dir) throws IOException {
-		Repository r = new FileRepository(); //
-		if (RepositoryCache.FileKey.isGitRepository(dir))
-			r.setGitDirRB(dir);
-		r.findGitDir(dir);
-		r.setup();
-		return r;
-	}
-
-	public static FileRepository createRepository(File indexFile, File objDir,
-			File altObjDir, File theDir) throws IOException {
-		FileRepository r = new FileRepository(); //
-		r.setGitDirRB(theDir);//
-		r.setObjectDirectoryRB(objDir); //
-		r.addAlternateObjectDirectoryRB(altObjDir); //
-		r.setIndexFileRB(indexFile); //
-		r.setup();
-		return r;
 	}
 
 	/** @return the global listener list observing all events in this JVM. */
@@ -333,7 +378,7 @@ public abstract class Repository implements AutoCloseable {
 	private List<File> ceilingDirectories;
 
 	/** True only if the caller wants to force bare behavior. */
-	private boolean bare;
+	protected boolean bare;
 
 	/**
 	 * Configuration file of target repository, lazily loaded if required.
@@ -379,21 +424,7 @@ public abstract class Repository implements AutoCloseable {
 	 * @throws IOException
 	 * @see #create(boolean)
 	 */
-	public void create() throws IOException {
-		create(bare);
-	}
-
-	/**
-	 * Create a new Git repository initializing the necessary files and
-	 * directories.
-	 *
-	 * @param bare
-	 *            if true, a bare repository (a repository without a working
-	 *            directory) is created.
-	 * @throws IOException
-	 *             in case of IO problem
-	 */
-	public abstract void create(boolean bare) throws IOException;
+	public abstract void create() throws IOException;
 
 	/**
 	 * @return local metadata directory; {@code null} if repository isn't local.
@@ -950,20 +981,6 @@ public abstract class Repository implements AutoCloseable {
 		return rev;
 	}
 
-	private static boolean isHex(char c) {
-		return ('0' <= c && c <= '9') //
-				|| ('a' <= c && c <= 'f') //
-				|| ('A' <= c && c <= 'F');
-	}
-
-	private static boolean isAllHex(String str, int ptr) {
-		while (ptr < str.length()) {
-			if (!isHex(str.charAt(ptr++)))
-				return false;
-		}
-		return true;
-	}
-
 	@Nullable
 	private RevObject parseSimple(RevWalk rw, String revstr)
 			throws IOException {
@@ -1341,15 +1358,6 @@ public abstract class Repository implements AutoCloseable {
 		return DirCache.lock(this, l);
 	}
 
-	static byte[] gitInternalSlash(byte[] bytes) {
-		if (File.separatorChar == '/')
-			return bytes;
-		for (int i = 0; i < bytes.length; ++i)
-			if (bytes[i] == File.separatorChar)
-				bytes[i] = '/';
-		return bytes;
-	}
-
 	/**
 	 * @return an important state
 	 */
@@ -1426,105 +1434,6 @@ public abstract class Repository implements AutoCloseable {
 	}
 
 	/**
-	 * Check validity of a ref name. It must not contain character that has a
-	 * special meaning in a Git object reference expression. Some other
-	 * dangerous characters are also excluded.
-	 *
-	 * For portability reasons '\' is excluded
-	 *
-	 * @param refName
-	 *
-	 * @return true if refName is a valid ref name
-	 */
-	public static boolean isValidRefName(final String refName) {
-		final int len = refName.length();
-		if (len == 0)
-			return false;
-		if (refName.endsWith(".lock")) //$NON-NLS-1$
-			return false;
-
-		// Refs may be stored as loose files so invalid paths
-		// on the local system must also be invalid refs.
-		try {
-			SystemReader.getInstance().checkPath(refName);
-		} catch (CorruptObjectException e) {
-			return false;
-		}
-
-		int components = 1;
-		char p = '\0';
-		for (int i = 0; i < len; i++) {
-			final char c = refName.charAt(i);
-			if (c <= ' ')
-				return false;
-			switch (c) {
-			case '.':
-				switch (p) {
-				case '\0':
-				case '/':
-				case '.':
-					return false;
-				}
-				if (i == len - 1)
-					return false;
-				break;
-			case '/':
-				if (i == 0 || i == len - 1)
-					return false;
-				if (p == '/')
-					return false;
-				components++;
-				break;
-			case '{':
-				if (p == '@')
-					return false;
-				break;
-			case '~':
-			case '^':
-			case ':':
-			case '?':
-			case '[':
-			case '*':
-			case '\\':
-			case '\u007F':
-				return false;
-			}
-			p = c;
-		}
-		return components > 1;
-	}
-
-	/**
-	 * Strip work dir and return normalized repository path.
-	 *
-	 * @param workDir
-	 *            Work dir
-	 * @param file
-	 *            File whose path shall be stripped of its workdir
-	 * @return normalized repository relative path or the empty string if the
-	 *         file is not relative to the work directory.
-	 */
-	@NonNull
-	public static String stripWorkDir(File workDir, File file) {
-		final String filePath = file.getPath();
-		final String workDirPath = workDir.getPath();
-
-		if (filePath.length() > workDirPath.length()
-				&& filePath.charAt(workDirPath.length()) == File.separatorChar
-				&& filePath.startsWith(workDirPath)) {
-			String relName = filePath.substring(workDirPath.length() + 1);
-			if (File.separatorChar != '/')
-				relName = relName.replace(File.separatorChar, '/');
-			return relName;
-		}
-		File absWd = workDir.isAbsolute() ? workDir : workDir.getAbsoluteFile();
-		File absFile = file.isAbsolute() ? file : file.getAbsoluteFile();
-		if (absWd == workDir && absFile == file)
-			return ""; //$NON-NLS-1$
-		return stripWorkDir(absWd, absFile);
-	}
-
-	/**
 	 * @return true if this is bare, which implies it has no working directory.
 	 */
 	public boolean isBare() {
@@ -1556,22 +1465,6 @@ public abstract class Repository implements AutoCloseable {
 	 * Notify that the index changed
 	 */
 	public abstract void notifyIndexChanged();
-
-	/**
-	 * @param refName
-	 *
-	 * @return a more user friendly ref name
-	 */
-	@NonNull
-	public static String shortenRefName(String refName) {
-		if (refName.startsWith(Constants.R_HEADS))
-			return refName.substring(Constants.R_HEADS.length());
-		if (refName.startsWith(Constants.R_TAGS))
-			return refName.substring(Constants.R_TAGS.length());
-		if (refName.startsWith(Constants.R_REMOTES))
-			return refName.substring(Constants.R_REMOTES.length());
-		return refName;
-	}
 
 	/**
 	 * @param refName

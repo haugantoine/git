@@ -156,7 +156,7 @@ public class SubmoduleWalkTest extends RepositoryTestCase {
 				+ File.separatorChar + path);
 		new FileWriter(dotGit).append(
 				"gitdir: " + modulesGitDir.getAbsolutePath()).close();
-		Repository rep = Repository
+		Repository rep = FileRepository
 				.createWorkTreeRepository2(new File(db.getWorkTree(), path));
 		rep.create();
 
@@ -208,7 +208,7 @@ public class SubmoduleWalkTest extends RepositoryTestCase {
 		new FileWriter(dotGit).append(
 				"gitdir: " + "../" + Constants.DOT_GIT + "/modules/" + path)
 				.close();
-		Repository rep = Repository
+		Repository rep = FileRepository
 				.createWorkTreeRepository2(new File(db.getWorkTree(), path));
 		rep.create();
 

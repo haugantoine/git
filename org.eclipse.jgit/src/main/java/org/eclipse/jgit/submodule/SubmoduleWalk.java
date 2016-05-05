@@ -51,6 +51,7 @@ import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.errors.CorruptObjectException;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.BlobBasedConfig;
 import org.eclipse.jgit.lib.Config;
@@ -224,7 +225,7 @@ public class SubmoduleWalk implements AutoCloseable {
 		if (!subWorkTree.isDirectory())
 			return null;
 		File workTree = new File(parent, path);
-		Repository repo = Repository.createWorkTreeRepository2(workTree);
+		Repository repo = FileRepository.createWorkTreeRepository2(workTree);
 		if (!repo.getObjectDatabase().exists())
 			return null;
 		return repo;

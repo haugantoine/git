@@ -76,6 +76,7 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -108,6 +109,100 @@ import org.eclipse.jgit.util.SystemReader;
  *
  */
 public class FileRepository extends Repository {
+	public static Repository createRepository(File directory, File gitDir,
+			boolean bare) throws IOException {
+		Repository r = new FileRepository(); //
+		r.readEnvironment();
+		if (gitDir == null)
+			gitDir = r.getGitDirRB();
+		else
+			r.setGitDirRB(gitDir);
+		if (bare) {
+			r.setBareRB();
+			if (directory == null) {
+				if (r.getGitDirRB() == null) {
+					r.setGitDirRB(Repository.getUserDirectory());
+				}
+			} else {
+				r.setGitDirRB(directory);
+			}
+		} else {
+			if (directory == null) {
+				if (r.getGitDirRB() == null) {
+					File d = new File(Repository.getUserDirectory(),
+							Constants.DOT_GIT);
+					r.setGitDirRB(d);
+				} else {
+					r.setWorkTreeRB(Repository.getUserDirectory());
+				}
+			} else {
+				r.setWorkTreeRB(directory);
+				if (gitDir == null)
+					r.setGitDirRB(new File(directory, Constants.DOT_GIT));
+			}
+		}
+		r.setup();
+		return r;
+	}
+
+	public static FileRepository createRepository(File indexFile, File objDir,
+			File altObjDir, File theDir) throws IOException {
+		FileRepository r = new FileRepository(); //
+		r.setGitDirRB(theDir);//
+		r.setObjectDirectoryRB(objDir); //
+		r.addAlternateObjectDirectoryRB(altObjDir); //
+		r.setIndexFileRB(indexFile); //
+		r.setup();
+		return r;
+	}
+
+	public static Repository createGitDirRepo(File dir) throws IOException {
+		Repository r = new FileRepository(); //
+		if (RepositoryCache.FileKey.isGitRepository(dir))
+			r.setGitDirRB(dir);
+		r.findGitDir(dir);
+		r.setup();
+		return r;
+	}
+
+	public static Repository createWorkTreeRepository2(File worktree)
+			throws IOException {
+		Repository r = new FileRepository(); //
+		r.setWorkTreeRB(worktree);
+		r.setup();
+		return r;
+	}
+
+	public static Repository createGitDirRepository(File dir)
+			throws IOException {
+		Repository r = new FileRepository(); //
+		r.setGitDirRB(dir);
+		r.setup();
+		return r;
+	}
+
+	public static Repository createGitDirEnvRepository(File file)
+			throws IOException {
+		Repository r = new FileRepository(); //
+		r.setGitDirRB(file); //
+		r.readEnvironment(); //
+		if (r.getGitDirRB() == null)
+			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
+		if (r.getGitDirRB() == null)
+			throw new IOException();
+		r.setup();
+		return r;
+	}
+
+	public static Repository createRepository(File gitdir, File workTree)
+			throws IOException {
+		Repository r = new FileRepository(); //
+		r.setGitDirRB(gitdir);
+		r.setWorkTreeRB(workTree);
+		r.setup();
+		return r;
+	}
+
 	private FileBasedConfig systemConfig;
 
 	private FileBasedConfig userConfig;
@@ -278,7 +373,7 @@ public class FileRepository extends Repository {
 	 * @throws IOException
 	 *             in case of IO problem
 	 */
-	public void create(boolean bare) throws IOException {
+	public void create() throws IOException {
 		final FileBasedConfig cfg = getConfig();
 		if (cfg.getFile().exists()) {
 			throw new IllegalStateException(MessageFormat.format(
@@ -302,21 +397,7 @@ public class FileRepository extends Repository {
 		head.disableRefLog();
 		head.link(Constants.R_HEADS + Constants.MASTER);
 
-		final boolean fileMode;
-		if (FS.DETECTED.supportsExecute()) {
-			File tmp = File.createTempFile("try", "execute", getDirectory()); //$NON-NLS-1$ //$NON-NLS-2$
-
-			FS.DETECTED.setExecute(tmp, true);
-			final boolean on = FS.DETECTED.canExecute(tmp);
-
-			FS.DETECTED.setExecute(tmp, false);
-			final boolean off = FS.DETECTED.canExecute(tmp);
-			FileUtils.delete(tmp);
-
-			fileMode = on && !off;
-		} else {
-			fileMode = false;
-		}
+		final boolean fileMode = getFileMode();
 
 		SymLinks symLinks = SymLinks.FALSE;
 		if (FS.DETECTED.supportsSymlinks()) {
@@ -366,6 +447,25 @@ public class FileRepository extends Repository {
 			}
 		}
 		cfg.save();
+	}
+
+	private boolean getFileMode() throws IOException {
+		final boolean fileMode;
+		if (FS.DETECTED.supportsExecute()) {
+			File tmp = File.createTempFile("try", "execute", getDirectory()); //$NON-NLS-1$ //$NON-NLS-2$
+
+			FS.DETECTED.setExecute(tmp, true);
+			final boolean on = FS.DETECTED.canExecute(tmp);
+
+			FS.DETECTED.setExecute(tmp, false);
+			final boolean off = FS.DETECTED.canExecute(tmp);
+			FileUtils.delete(tmp);
+
+			fileMode = on && !off;
+		} else {
+			fileMode = false;
+		}
+		return fileMode;
 	}
 
 	/**
@@ -470,11 +570,12 @@ public class FileRepository extends Repository {
 		if (isBare())
 			return;
 
-		File indexFile = getIndexFile();
 		if (snapshot == null)
 			snapshot = FileSnapshot.save(indexFile);
-		else if (snapshot.isModified(indexFile))
-			notifyIndexChanged();
+		else if (snapshot.isModified(indexFile)) {
+			snapshot = FileSnapshot.save(indexFile);
+			fireEvent(new IndexChangedEvent());
+		}
 	}
 
 	@Override

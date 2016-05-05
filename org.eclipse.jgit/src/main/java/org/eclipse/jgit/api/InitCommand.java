@@ -50,6 +50,7 @@ import java.util.concurrent.Callable;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.internal.JGitText;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.Repository;
 
 /**
@@ -72,7 +73,7 @@ public class InitCommand implements Callable<Git> {
 	 */
 	public Git call() throws GitAPIException {
 		try {
-			Repository repository = Repository.createRepository(directory,
+			Repository repository = FileRepository.createRepository(directory,
 					gitDir, bare);
 			if (!repository.getObjectDatabase().exists())
 				repository.create();

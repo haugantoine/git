@@ -61,6 +61,7 @@ import org.eclipse.jgit.diff.MyersDiff;
 import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.errors.LargeObjectException;
+import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
@@ -143,7 +144,7 @@ class DiffAlgorithms extends TextBuiltin {
 		}
 
 		for (File dir : gitDirs) {
-			Repository db = Repository.createGitDirRepo(dir);
+			Repository db = FileRepository.createGitDirRepo(dir);
 			try {
 				run(db);
 			} finally {

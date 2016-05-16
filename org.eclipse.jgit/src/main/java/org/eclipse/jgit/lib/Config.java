@@ -215,10 +215,11 @@ public class Config {
 	public int getInt(final String section, String subsection,
 			final String name, final int defaultValue) {
 		final long val = getLong(section, subsection, name, defaultValue);
-		if (Integer.MIN_VALUE <= val && val <= Integer.MAX_VALUE)
-			return (int) val;
-		throw new IllegalArgumentException(MessageFormat.format(JGitText.get().integerValueOutOfRange
-				, section, name));
+		if (Integer.MIN_VALUE > val || val > Integer.MAX_VALUE) {
+			throw new IllegalArgumentException(MessageFormat.format(
+					JGitText.get().integerValueOutOfRange, section, name));
+		}
+		return (int) val;
 	}
 
 	/**
@@ -424,14 +425,14 @@ public class Config {
 			}
 		}
 
-		if (subsection != null)
-			throw new IllegalArgumentException(MessageFormat.format(
-					JGitText.get().enumValueNotSupported3, section, subsection,
-					name, value));
-		else
+		if (subsection == null)
 			throw new IllegalArgumentException(
 					MessageFormat.format(JGitText.get().enumValueNotSupported2,
 							section, name, value));
+		else
+			throw new IllegalArgumentException(MessageFormat.format(
+					JGitText.get().enumValueNotSupported3, section, subsection,
+					name, value));
 	}
 
 	/**
@@ -467,10 +468,10 @@ public class Config {
 	public String[] getStringList(final String section, String subsection,
 			final String name) {
 		String[] base;
-		if (baseConfig != null)
-			base = baseConfig.getStringList(section, subsection, name);
-		else
+		if (baseConfig == null)
 			base = EMPTY_STRING_ARRAY;
+		else
+			base = baseConfig.getStringList(section, subsection, name);
 
 		String[] self = getRawStringList(section, subsection, name);
 		if (self == null)

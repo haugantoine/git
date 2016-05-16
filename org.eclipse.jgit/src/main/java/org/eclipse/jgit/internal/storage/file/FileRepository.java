@@ -46,6 +46,13 @@
 
 package org.eclipse.jgit.internal.storage.file;
 
+import static org.eclipse.jgit.lib.Constants.DOT_GIT;
+import static org.eclipse.jgit.lib.Constants.GIT_ALTERNATE_OBJECT_DIRECTORIES_KEY;
+import static org.eclipse.jgit.lib.Constants.GIT_CEILING_DIRECTORIES_KEY;
+import static org.eclipse.jgit.lib.Constants.GIT_DIR_KEY;
+import static org.eclipse.jgit.lib.Constants.GIT_INDEX_FILE_KEY;
+import static org.eclipse.jgit.lib.Constants.GIT_OBJECT_DIRECTORY_KEY;
+import static org.eclipse.jgit.lib.Constants.GIT_WORK_TREE_KEY;
 import static org.eclipse.jgit.lib.RefDatabase.ALL;
 
 import java.io.File;
@@ -54,6 +61,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Set;
 
 import org.eclipse.jgit.attributes.AttributesNode;
@@ -94,70 +102,35 @@ import org.eclipse.jgit.util.SystemReader;
  *
  * <ul>
  * <li>GIT_DIR
- * 	<ul>
- * 		<li>objects/ - objects</li>
- * 		<li>refs/ - tags and heads</li>
- * 		<li>config - configuration</li>
- * 		<li>info/ - more configurations</li>
- * 	</ul>
+ * <ul>
+ * <li>objects/ - objects</li>
+ * <li>refs/ - tags and heads</li>
+ * <li>config - configuration</li>
+ * <li>info/ - more configurations</li>
+ * </ul>
  * </li>
  * </ul>
  * <p>
  * This class is thread-safe.
  * <p>
- * This implementation only handles a subtly undocumented subset of git features.
+ * This implementation only handles a subtly undocumented subset of git
+ * features.
  *
  */
 public class FileRepository extends Repository {
-	public static Repository createRepository(File directory, File gitDir,
+	public static FileRepository createRepository(File directory, File gitDir,
 			boolean bare) throws IOException {
-		Repository r = new FileRepository(); //
-		r.readEnvironment();
-		if (gitDir == null)
-			gitDir = r.getGitDirRB();
-		else
-			r.setGitDirRB(gitDir);
-		if (bare) {
-			r.setBareRB();
-			if (directory == null) {
-				if (r.getGitDirRB() == null) {
-					r.setGitDirRB(Repository.getUserDirectory());
-				}
-			} else {
-				r.setGitDirRB(directory);
-			}
-		} else {
-			if (directory == null) {
-				if (r.getGitDirRB() == null) {
-					File d = new File(Repository.getUserDirectory(),
-							Constants.DOT_GIT);
-					r.setGitDirRB(d);
-				} else {
-					r.setWorkTreeRB(Repository.getUserDirectory());
-				}
-			} else {
-				r.setWorkTreeRB(directory);
-				if (gitDir == null)
-					r.setGitDirRB(new File(directory, Constants.DOT_GIT));
-			}
-		}
-		r.setup();
-		return r;
+		return new FileRepository(directory, gitDir, bare);
 	}
 
 	public static FileRepository createRepository(File indexFile, File objDir,
 			File altObjDir, File theDir) throws IOException {
-		FileRepository r = new FileRepository(); //
-		r.setGitDirRB(theDir);//
-		r.setObjectDirectoryRB(objDir); //
-		r.addAlternateObjectDirectoryRB(altObjDir); //
-		r.setIndexFileRB(indexFile); //
-		r.setup();
-		return r;
+		return new FileRepository(indexFile, objDir, altObjDir,
+				theDir); //
 	}
 
-	public static Repository createGitDirRepo(File dir) throws IOException {
-		Repository r = new FileRepository(); //
+	public static FileRepository createGitDirRepo(File dir) throws IOException {
+		FileRepository r = new FileRepository(); //
 		if (RepositoryCache.FileKey.isGitRepository(dir))
 			r.setGitDirRB(dir);
 		r.findGitDir(dir);
@@ -165,40 +138,32 @@ public class FileRepository extends Repository {
 		return r;
 	}
 
-	public static Repository createWorkTreeRepository2(File worktree)
+	public static FileRepository createWorkTreeRepository2(File worktree)
 			throws IOException {
-		Repository r = new FileRepository(); //
+		FileRepository r = new FileRepository(); //
 		r.setWorkTreeRB(worktree);
 		r.setup();
 		return r;
 	}
 
-	public static Repository createGitDirRepository(File dir)
+	public static FileRepository createGitDirRepository(File dir)
 			throws IOException {
-		Repository r = new FileRepository(); //
+		FileRepository r = new FileRepository(); //
 		r.setGitDirRB(dir);
 		r.setup();
 		return r;
 	}
 
-	public static Repository createGitDirEnvRepository(File file)
+	public static FileRepository createGitDirEnvRepository(String aGitdir)
 			throws IOException {
-		Repository r = new FileRepository(); //
-		r.setGitDirRB(file); //
-		r.readEnvironment(); //
-		if (r.getGitDirRB() == null)
-			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
-		if (r.getGitDirRB() == null)
-			throw new IOException();
-		r.setup();
-		return r;
-	}
 
-	public static Repository createRepository(File gitdir, File workTree)
-			throws IOException {
-		Repository r = new FileRepository(); //
-		r.setGitDirRB(gitdir);
-		r.setWorkTreeRB(workTree);
+		FileRepository r = new FileRepository(); //
+		r.setGitDirRB(aGitdir != null ? new File(aGitdir) : null); //
+		r.readEnvironment(); //
+		if (r.gitDir == null)
+			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
+		if (r.gitDir == null)
+			throw new IOException();
 		r.setup();
 		return r;
 	}
@@ -216,7 +181,6 @@ public class FileRepository extends Repository {
 	private FileSnapshot snapshot;
 
 	public FileRepository() {
-		super();
 	}
 
 	/**
@@ -239,55 +203,76 @@ public class FileRepository extends Repository {
 	 * @see FileRepositoryBuilder
 	 */
 	public FileRepository(final File gitDir) throws IOException {
-		this();
 		this.gitDir = gitDir;
 		setup();
 	}
 
-	/**
-	 * A convenience API for {@link #FileRepository(File)}.
-	 *
-	 * @param gitDir
-	 *            GIT_DIR (the location of the repository metadata).
-	 * @throws IOException
-	 *             the repository appears to already exist but cannot be
-	 *             accessed.
-	 * @see FileRepositoryBuilder
-	 */
-	public FileRepository(final String gitDir) throws IOException {
-		this(new File(gitDir));
-	}
+	private FileRepository(File directory, File gitdir, boolean isBare)
+			throws IOException {
+		this.bare = isBare;
+		SystemReader sr = SystemReader.getInstance();
+		if (!this.bare) {
+			getWorkTree(directory, gitdir, sr);
+		}
+		getGitDir(directory, gitdir, sr);
 
-	/**
-	 * Create a repository using the local file system.
-	 *
-	 * @param options
-	 *            description of the repository's important paths.
-	 * @throws IOException
-	 *             the user configuration file or repository configuration file
-	 *             cannot be accessed.
-	 */
-	public void setup() throws IOException {
-		super.setup();
+		String val = sr.getenv(GIT_OBJECT_DIRECTORY_KEY);
+		if (val != null)
+			this.objectDirectory = new File(val);
 
-		if (StringUtils.isEmptyOrNull(SystemReader.getInstance().getenv(
-				Constants.GIT_CONFIG_NOSYSTEM_KEY)))
-			systemConfig = SystemReader.getInstance().openSystemConfig(null);
+		val = sr.getenv(GIT_ALTERNATE_OBJECT_DIRECTORIES_KEY);
+		if (val != null) {
+			for (String path : val.split(File.pathSeparator)) {
+				File other = new File(path);
+				if (alternateObjectDirectories == null)
+					alternateObjectDirectories = new LinkedList<File>();
+				alternateObjectDirectories.add(other);
+			}
+		}
+
+		val = sr.getenv(GIT_INDEX_FILE_KEY);
+		if (!isBare && val != null)
+			this.indexFile = new File(val);
+
+		val = sr.getenv(GIT_CEILING_DIRECTORIES_KEY);
+		if (val != null) {
+			for (String path : val.split(File.pathSeparator)) {
+				File root = new File(path);
+				if (ceilingDirectories == null)
+					ceilingDirectories = new LinkedList<File>();
+				ceilingDirectories.add(root);
+			}
+		}
+
+		// If we aren't bare, we should have a work tree.
+		//
+		if (!this.bare && workTree == null)
+			workTree = guessWorkTreeOrFail();
+
+		if (!bare && indexFile == null)
+			this.indexFile = new File(gitDir, "index"); //$NON-NLS-1$
+
+		if (objectDirectory == null && gitDir != null)
+			this.objectDirectory = FS.DETECTED.resolve(gitDir, "objects"); //$NON-NLS-1$
+
+		if (StringUtils.isEmptyOrNull(SystemReader.getInstance()
+				.getenv(Constants.GIT_CONFIG_NOSYSTEM_KEY))) {
+			File configFile = FS.DETECTED.getGitSystemConfig();
+			if (configFile == null) {
+				systemConfig = getEmptySystemConfig();
+			} else {
+				systemConfig = new FileBasedConfig(null, configFile);
+			}
+		}
 		else
-			systemConfig = new FileBasedConfig(null) {
-				public void load() {
-					// empty, do not load
-				}
+			systemConfig = getEmptySystemConfig();
+		File cfgLocation = new File(FS.DETECTED.userHome(), ".gitconfig");//$NON-NLS-1$
+		File repoConfigFile = FS.DETECTED.resolve(getDirectory(),
+				Constants.CONFIG);
 
-				public boolean isOutdated() {
-					// regular class would bomb here
-					return false;
-				}
-			};
-		userConfig = SystemReader.getInstance().openUserConfig(systemConfig);
+		userConfig = new FileBasedConfig(systemConfig, cfgLocation);
 		repoConfig = new FileBasedConfig(userConfig,
-				FS.DETECTED.resolve(
-				getDirectory(), Constants.CONFIG));
+				repoConfigFile);
 
 		loadSystemConfig();
 		loadUserConfig();
@@ -303,8 +288,168 @@ public class FileRepository extends Repository {
 				ConfigConstants.CONFIG_CORE_SECTION, null,
 				ConfigConstants.CONFIG_KEY_REPO_FORMAT_VERSION, 0);
 
-		String reftype = repoConfig.getString(
-				"extensions", null, "refsStorage"); //$NON-NLS-1$ //$NON-NLS-2$
+		String reftype = repoConfig.getString("extensions", null, //$NON-NLS-1$
+				"refsStorage"); //$NON-NLS-1$
+		if (repositoryFormatVersion >= 1 && reftype != null) {
+			if (StringUtils.equalsIgnoreCase(reftype, "reftree")) { //$NON-NLS-1$
+				refs = new RefTreeDatabase(this, new RefDirectory(this));
+			} else {
+				throw new IOException(JGitText.get().unknownRepositoryFormat);
+			}
+		} else {
+			refs = new RefDirectory(this);
+		}
+
+		objectDatabase = new ObjectDirectory(repoConfig, //
+				getObjectDirectoryRB(), //
+				getAlternateObjectDirectoriesRB(), //
+				new File(getDirectory(), Constants.SHALLOW));
+
+		if (objectDatabase.exists() && repositoryFormatVersion > 1)
+			throw new IOException(MessageFormat.format(
+					JGitText.get().unknownRepositoryFormat2,
+					Long.valueOf(repositoryFormatVersion)));
+
+		if (!isBare())
+			snapshot = FileSnapshot.save(getIndexFile());
+		if (!objectDatabase.exists())
+			create();
+	}
+
+	private FileBasedConfig getEmptySystemConfig() {
+		return new FileBasedConfig(null) {
+			public void load() {
+				// empty, do not load
+			}
+
+			public boolean isOutdated() {
+				// regular class would bomb here
+				return false;
+			}
+		};
+	}
+
+	public FileRepository(File indexFile, File objDir, File altObjDir,
+			File theDir) throws IOException {
+		this.gitDir = theDir;
+		this.objectDirectory = objDir;
+		if (altObjDir != null) {
+			if (alternateObjectDirectories == null)
+				alternateObjectDirectories = new LinkedList<File>();
+			alternateObjectDirectories.add(altObjDir);
+		}
+		this.indexFile = indexFile;
+		setup();
+	}
+
+	private void getGitDir(File directory, File gitDir, SystemReader sr) {
+		String val = sr.getenv(GIT_DIR_KEY);
+		if (gitDir != null) {
+			this.gitDir = gitDir;
+		} else if (val != null) {
+			this.gitDir = new File(val);
+		} else {
+			File dir = (directory == null) ? Repository.getUserDirectory()
+					: directory;
+			this.gitDir = (this.bare) ? dir : new File(dir, Constants.DOT_GIT);
+		}
+	}
+
+	private void getWorkTree(File directory, File gitDir, SystemReader sr) {
+		if (directory != null) {
+			this.workTree = directory;
+		} else if (gitDir == null) {
+			String workTreePath = sr.getenv(GIT_WORK_TREE_KEY);
+			if (workTreePath != null)
+				this.workTree = new File(workTreePath);
+		} else {
+			this.workTree = Repository.getUserDirectory();
+		}
+	}
+
+	/**
+	 * Guess and populate all parameters not already defined.
+	 * <p>
+	 * If an option was not set, the setup method will try to default the option
+	 * based on other options. If insufficient information is available, an
+	 * exception is thrown to the caller.
+	 *
+	 * @return {@code this}
+	 * @throws IllegalArgumentException
+	 *             insufficient parameters were set, or some parameters are
+	 *             incompatible with one another.
+	 * @throws IOException
+	 *             the repository could not be accessed to configure the rest of
+	 *             the builder's parameters.
+	 */
+	public void setup() throws IOException {
+		if (gitDir == null && workTree == null)
+			throw new IllegalArgumentException(
+					JGitText.get().eitherGitDirOrWorkTreeRequired);
+		// No gitDir? Try to assume its under the workTree or a ref to
+		// another
+		// location
+		if (gitDir == null) {
+			File dotGit = new File(workTree, DOT_GIT);
+			if (dotGit.isFile()) {
+				this.gitDir = getSymRef(workTree, dotGit);
+			} else {
+				this.gitDir = dotGit;
+			}
+			this.config = null;
+		}
+		// If we aren't bare, we should have a work tree.
+		//
+		if (!isBareRB() && workTree == null)
+			workTree = guessWorkTreeOrFail();
+
+		if (!isBareRB()) {
+			// If after guessing we're still not bare, we must have
+			// a metadata directory to hold the repository. Assume
+			// its at the work tree.
+			//
+			if (gitDir == null)
+				setGitDirRB(workTree.getParentFile());
+			if (getIndexFileRB() == null)
+				setIndexFileRB(new File(gitDir, "index")); //$NON-NLS-1$
+		}
+		if (getObjectDirectoryRB() == null && gitDir != null)
+			setObjectDirectoryRB(FS.DETECTED.resolve(gitDir, "objects")); //$NON-NLS-1$
+
+		if (StringUtils.isEmptyOrNull(SystemReader.getInstance()
+				.getenv(Constants.GIT_CONFIG_NOSYSTEM_KEY)))
+			systemConfig = SystemReader.getInstance().openSystemConfig(null);
+		else
+			systemConfig = new FileBasedConfig(null) {
+				public void load() {
+					// empty, do not load
+				}
+
+				public boolean isOutdated() {
+					// regular class would bomb here
+					return false;
+				}
+			};
+		userConfig = SystemReader.getInstance().openUserConfig(systemConfig);
+		repoConfig = new FileBasedConfig(userConfig,
+				FS.DETECTED.resolve(getDirectory(), Constants.CONFIG));
+
+		loadSystemConfig();
+		loadUserConfig();
+		loadRepoConfig();
+
+		repoConfig.addChangeListener(new ConfigChangedListener() {
+			public void onConfigChanged(ConfigChangedEvent event) {
+				fireEvent(event);
+			}
+		});
+
+		final long repositoryFormatVersion = getConfig().getLong(
+				ConfigConstants.CONFIG_CORE_SECTION, null,
+				ConfigConstants.CONFIG_KEY_REPO_FORMAT_VERSION, 0);
+
+		String reftype = repoConfig.getString("extensions", null, //$NON-NLS-1$
+				"refsStorage"); //$NON-NLS-1$
 		if (repositoryFormatVersion >= 1 && reftype != null) {
 			if (StringUtils.equalsIgnoreCase(reftype, "reftree")) { //$NON-NLS-1$
 				refs = new RefTreeDatabase(this, new RefDirectory(this));
@@ -333,9 +478,9 @@ public class FileRepository extends Repository {
 		try {
 			systemConfig.load();
 		} catch (ConfigInvalidException e1) {
-			IOException e2 = new IOException(MessageFormat.format(JGitText
-					.get().systemConfigFileInvalid, systemConfig.getFile()
-					.getAbsolutePath(), e1));
+			IOException e2 = new IOException(
+					MessageFormat.format(JGitText.get().systemConfigFileInvalid,
+							systemConfig.getFile().getAbsolutePath(), e1));
 			e2.initCause(e1);
 			throw e2;
 		}
@@ -345,9 +490,9 @@ public class FileRepository extends Repository {
 		try {
 			userConfig.load();
 		} catch (ConfigInvalidException e1) {
-			IOException e2 = new IOException(MessageFormat.format(JGitText
-					.get().userConfigFileInvalid, userConfig.getFile()
-					.getAbsolutePath(), e1));
+			IOException e2 = new IOException(
+					MessageFormat.format(JGitText.get().userConfigFileInvalid,
+							userConfig.getFile().getAbsolutePath(), e1));
 			e2.initCause(e1);
 			throw e2;
 		}
@@ -357,7 +502,8 @@ public class FileRepository extends Repository {
 		try {
 			repoConfig.load();
 		} catch (ConfigInvalidException e1) {
-			IOException e2 = new IOException(JGitText.get().unknownRepositoryFormat);
+			IOException e2 = new IOException(
+					JGitText.get().unknownRepositoryFormat);
 			e2.initCause(e1);
 			throw e2;
 		}
@@ -412,8 +558,8 @@ public class FileRepository extends Repository {
 		}
 		if (symLinks != null)
 			cfg.setString(ConfigConstants.CONFIG_CORE_SECTION, null,
-					ConfigConstants.CONFIG_KEY_SYMLINKS, symLinks.name()
-							.toLowerCase());
+					ConfigConstants.CONFIG_KEY_SYMLINKS,
+					symLinks.name().toLowerCase());
 		cfg.setInt(ConfigConstants.CONFIG_CORE_SECTION, null,
 				ConfigConstants.CONFIG_KEY_REPO_FORMAT_VERSION, 0);
 		cfg.setBoolean(ConfigConstants.CONFIG_CORE_SECTION, null,
@@ -431,10 +577,10 @@ public class FileRepository extends Repository {
 			File workTree = getWorkTree();
 			if (!getDirectory().getParentFile().equals(workTree)) {
 				cfg.setString(ConfigConstants.CONFIG_CORE_SECTION, null,
-						ConfigConstants.CONFIG_KEY_WORKTREE, getWorkTree()
-								.getAbsolutePath());
-				LockFile dotGitLockFile = new LockFile(new File(workTree,
-						Constants.DOT_GIT));
+						ConfigConstants.CONFIG_KEY_WORKTREE,
+						getWorkTree().getAbsolutePath());
+				LockFile dotGitLockFile = new LockFile(
+						new File(workTree, Constants.DOT_GIT));
 				try {
 					if (dotGitLockFile.lock()) {
 						dotGitLockFile.write(Constants.encode(Constants.GITDIR
@@ -506,11 +652,11 @@ public class FileRepository extends Repository {
 			}
 		}
 		if (repoConfig.isOutdated()) {
-				try {
-					loadRepoConfig();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
+			try {
+				loadRepoConfig();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 		}
 		return repoConfig;
 	}
@@ -520,8 +666,8 @@ public class FileRepository extends Repository {
 	 * <p>
 	 * When a repository borrows objects from another repository, it can
 	 * advertise that it safely has that other repository's references, without
-	 * exposing any other details about the other repository.  This may help
-	 * a client trying to push changes avoid pushing more than it needs to.
+	 * exposing any other details about the other repository. This may help a
+	 * client trying to push changes avoid pushing more than it needs to.
 	 *
 	 * @return unmodifiable collection of other known objects.
 	 */
@@ -588,7 +734,8 @@ public class FileRepository extends Repository {
 	 * @param refName
 	 * @return a {@link ReflogReader} for the supplied refname, or null if the
 	 *         named ref does not exist.
-	 * @throws IOException the ref could not be accessed.
+	 * @throws IOException
+	 *             the ref could not be accessed.
 	 */
 	public ReflogReader getReflogReader(String refName) throws IOException {
 		Ref ref = findRef(refName);
@@ -609,8 +756,7 @@ public class FileRepository extends Repository {
 	 * @author <a href="mailto:arthur.daussy@obeo.fr">Arthur Daussy</a>
 	 *
 	 */
-	static class AttributesNodeProviderImpl implements
-			AttributesNodeProvider {
+	static class AttributesNodeProviderImpl implements AttributesNodeProvider {
 
 		private AttributesNode infoAttributesNode;
 

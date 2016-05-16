@@ -75,7 +75,7 @@ import org.eclipse.jgit.submodule.SubmoduleStatusType;
 import org.eclipse.jgit.submodule.SubmoduleWalk;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.RemoteConfig;
-import org.eclipse.jgit.util.SystemReader;
+import org.eclipse.jgit.util.FS;
 import org.junit.Test;
 
 public class CloneCommandTest extends RepositoryTestCase {
@@ -598,7 +598,7 @@ public class CloneCommandTest extends RepositoryTestCase {
 	}
 
 	@Test
-	public void testCloneWithAutoSetupRebase() throws Exception {
+	public void testCloneWithAutoSetupRebaseWithoutConfig() throws Exception {
 		File directory = createTempDirectory("testCloneRepository1");
 		CloneCommand command = Git.cloneRepository();
 		command.setDirectory(directory);
@@ -610,18 +610,22 @@ public class CloneCommandTest extends RepositoryTestCase {
 				.getConfig()
 				.getBoolean(ConfigConstants.CONFIG_BRANCH_SECTION, "test",
 						ConfigConstants.CONFIG_KEY_REBASE, false));
+	}
 
-		FileBasedConfig userConfig = SystemReader.getInstance().openUserConfig(
-				null);
+	@Test
+	public void testCloneWithAutoSetupRebaseWithAlwaysAutoConf()
+			throws Exception {
+		File cfgLocation = new File(FS.DETECTED.userHome(), ".gitconfig");//$NON-NLS-1$
+		FileBasedConfig userConfig = new FileBasedConfig(null, cfgLocation);
 		userConfig.setString(ConfigConstants.CONFIG_BRANCH_SECTION, null,
 				ConfigConstants.CONFIG_KEY_AUTOSETUPREBASE,
 				ConfigConstants.CONFIG_KEY_ALWAYS);
 		userConfig.save();
-		directory = createTempDirectory("testCloneRepository2");
-		command = Git.cloneRepository();
+		File directory = createTempDirectory("testCloneRepository2");
+		CloneCommand command = Git.cloneRepository();
 		command.setDirectory(directory);
 		command.setURI(fileUri());
-		git2 = command.call();
+		Git git2 = command.call();
 		addRepoToClose(git2.getRepository());
 		assertTrue(git2
 				.getRepository()
@@ -629,22 +633,30 @@ public class CloneCommandTest extends RepositoryTestCase {
 				.getBoolean(ConfigConstants.CONFIG_BRANCH_SECTION, "test",
 						ConfigConstants.CONFIG_KEY_REBASE, false));
 
+		new File(FS.DETECTED.userHome(), ".gitconfig").delete();
+	}
+
+	@Test
+	public void testCloneWithAutoSetupRebaseWithFalseAutoConf()
+			throws Exception {
+		File cfgLocation = new File(FS.DETECTED.userHome(), ".gitconfig");//$NON-NLS-1$
+		FileBasedConfig userConfig = new FileBasedConfig(null, cfgLocation);
 		userConfig.setString(ConfigConstants.CONFIG_BRANCH_SECTION, null,
 				ConfigConstants.CONFIG_KEY_AUTOSETUPREBASE,
 				ConfigConstants.CONFIG_KEY_REMOTE);
 		userConfig.save();
-		directory = createTempDirectory("testCloneRepository2");
-		command = Git.cloneRepository();
+		File directory = createTempDirectory("testCloneRepository2");
+		CloneCommand command = Git.cloneRepository();
 		command.setDirectory(directory);
 		command.setURI(fileUri());
-		git2 = command.call();
+		Git git2 = command.call();
 		addRepoToClose(git2.getRepository());
 		assertTrue(git2
 				.getRepository()
 				.getConfig()
 				.getBoolean(ConfigConstants.CONFIG_BRANCH_SECTION, "test",
 						ConfigConstants.CONFIG_KEY_REBASE, false));
-
+		new File(FS.DETECTED.userHome(), ".gitconfig").delete();
 	}
 
 	private String fileUri() {

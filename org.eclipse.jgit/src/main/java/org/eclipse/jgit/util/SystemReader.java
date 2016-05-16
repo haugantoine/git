@@ -64,83 +64,78 @@ import org.eclipse.jgit.lib.ObjectChecker;
 /**
  * Interface to read values from the system.
  * <p>
- * When writing unit tests, extending this interface with a custom class
- * permits to simulate an access to a system variable or property and
- * permits to control the user's global configuration.
+ * When writing unit tests, extending this interface with a custom class permits
+ * to simulate an access to a system variable or property and permits to control
+ * the user's global configuration.
  * </p>
  */
-public abstract class SystemReader {
-	private static final SystemReader DEFAULT;
+public class SystemReader {
+	private static SystemReader INSTANCE = new SystemReader();
 
 	private static Boolean isMacOS;
 
 	private static Boolean isWindows;
 
+	private volatile String hostname;
+
 	static {
-		SystemReader r = new Default();
-		r.init();
-		DEFAULT = r;
+		INSTANCE.init();
 	}
 
-	private static class Default extends SystemReader {
-		private volatile String hostname;
+	protected SystemReader() {
+	}
 
-		public String getenv(String variable) {
-			return System.getenv(variable);
-		}
+	public String getenv(String variable) {
+		return System.getenv(variable);
+	}
 
-		public String getProperty(String key) {
-			return System.getProperty(key);
-		}
+	public String getProperty(String key) {
+		return System.getProperty(key);
+	}
 
-		public FileBasedConfig openSystemConfig(Config parent) {
-			File configFile = FS.DETECTED.getGitSystemConfig();
-			if (configFile == null) {
-				return new FileBasedConfig(null) {
-					public void load() {
-						// empty, do not load
-					}
-
-					public boolean isOutdated() {
-						// regular class would bomb here
-						return false;
-					}
-				};
-			}
-			return new FileBasedConfig(parent, configFile);
-		}
-
-		public FileBasedConfig openUserConfig(Config parent) {
-			final File home = FS.DETECTED.userHome();
-			return new FileBasedConfig(parent, new File(home, ".gitconfig")); //$NON-NLS-1$
-		}
-
-		public String getHostname() {
-			if (hostname == null) {
-				try {
-					InetAddress localMachine = InetAddress.getLocalHost();
-					hostname = localMachine.getCanonicalHostName();
-				} catch (UnknownHostException e) {
-					// we do nothing
-					hostname = "localhost"; //$NON-NLS-1$
+	public FileBasedConfig openSystemConfig(Config parent) {
+		File configFile = FS.DETECTED.getGitSystemConfig();
+		if (configFile == null) {
+			return new FileBasedConfig(null) {
+				public void load() {
+					// empty, do not load
 				}
-				assert hostname != null;
-			}
-			return hostname;
-		}
 
-		@Override
-		public long getCurrentTime() {
-			return System.currentTimeMillis();
+				public boolean isOutdated() {
+					// regular class would bomb here
+					return false;
+				}
+			};
 		}
-
-		@Override
-		public int getTimezone(long when) {
-			return getTimeZone().getOffset(when) / (60 * 1000);
-		}
+		return new FileBasedConfig(parent, configFile);
 	}
 
-	private static SystemReader INSTANCE = DEFAULT;
+	public FileBasedConfig openUserConfig(Config parent) {
+		File cfgLocation = new File(FS.DETECTED.userHome(), ".gitconfig");//$NON-NLS-1$
+		return new FileBasedConfig(parent, cfgLocation);
+	}
+
+	public String getHostname() {
+		if (hostname == null) {
+			try {
+				InetAddress localMachine = InetAddress.getLocalHost();
+				hostname = localMachine.getCanonicalHostName();
+			} catch (UnknownHostException e) {
+				// we do nothing
+				hostname = "localhost"; //$NON-NLS-1$
+			}
+			assert hostname != null;
+		}
+		return hostname;
+	}
+
+	public long getCurrentTime() {
+		return System.currentTimeMillis();
+	}
+
+	public int getTimezone(long when) {
+		return getTimeZone().getOffset(when) / (60 * 1000);
+	}
 
 	/** @return the live instance to read system properties. */
 	public static SystemReader getInstance() {
@@ -155,9 +150,7 @@ public abstract class SystemReader {
 	public static void setInstance(SystemReader newReader) {
 		isMacOS = null;
 		isWindows = null;
-		if (newReader == null)
-			INSTANCE = DEFAULT;
-		else {
+		if (newReader != null) {
 			newReader.init();
 			INSTANCE = newReader;
 		}
@@ -178,63 +171,9 @@ public abstract class SystemReader {
 	 * @since 3.6
 	 */
 	protected final void setPlatformChecker() {
-		platformChecker = new ObjectChecker()
-			.setSafeForWindows(isWindows())
-			.setSafeForMacOS(isMacOS());
+		platformChecker = new ObjectChecker().setSafeForWindows(isWindows())
+				.setSafeForMacOS(isMacOS());
 	}
-
-	/**
-	 * Gets the hostname of the local host. If no hostname can be found, the
-	 * hostname is set to the default value "localhost".
-	 *
-	 * @return the canonical hostname
-	 */
-	public abstract String getHostname();
-
-	/**
-	 * @param variable system variable to read
-	 * @return value of the system variable
-	 */
-	public abstract String getenv(String variable);
-
-	/**
-	 * @param key of the system property to read
-	 * @return value of the system property
-	 */
-	public abstract String getProperty(String key);
-
-	/**
-	 * @param parent
-	 *            a config with values not found directly in the returned config
-	 * @param fs
-	 *            the file system abstraction which will be necessary to perform
-	 *            certain file system operations.
-	 * @return the git configuration found in the user home
-	 */
-	public abstract FileBasedConfig openUserConfig(Config parent);
-
-	/**
-	 * @param parent
-	 *            a config with values not found directly in the returned
-	 *            config. Null is a reasonable value here.
-	 * @param fs
-	 *            the file system abstraction which will be necessary to perform
-	 *            certain file system operations.
-	 * @return the gitonfig configuration found in the system-wide "etc"
-	 *         directory
-	 */
-	public abstract FileBasedConfig openSystemConfig(Config parent);
-
-	/**
-	 * @return the current system time
-	 */
-	public abstract long getCurrentTime();
-
-	/**
-	 * @param when TODO
-	 * @return the local time zone
-	 */
-	public abstract int getTimezone(long when);
 
 	/**
 	 * @return system time zone, possibly mocked for testing
@@ -332,8 +271,10 @@ public abstract class SystemReader {
 	 * <p>
 	 * Scans a multi-directory path string such as {@code "src/main.c"}.
 	 *
-	 * @param path path string to scan.
-	 * @throws CorruptObjectException path is invalid.
+	 * @param path
+	 *            path string to scan.
+	 * @throws CorruptObjectException
+	 *             path is invalid.
 	 * @since 3.6
 	 */
 	public void checkPath(String path) throws CorruptObjectException {

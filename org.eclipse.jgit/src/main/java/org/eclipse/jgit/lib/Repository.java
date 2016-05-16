@@ -201,7 +201,7 @@ public abstract class Repository implements AutoCloseable {
 				&& ref[7] == ' ';
 	}
 
-	private static File getSymRef(File workTree, File dotGit)
+	protected static File getSymRef(File workTree, File dotGit)
 			throws IOException {
 		byte[] content = IO.readFully(dotGit);
 		if (!isSymRef(content))
@@ -340,9 +340,9 @@ public abstract class Repository implements AutoCloseable {
 		Repository r = new FileRepository(); //
 		r.setGitDirRB(dir);
 		r.readEnvironment(); //
-		if (r.getGitDirRB() == null)
+		if (r.gitDir == null)
 			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
-		return r.getGitDirRB();
+		return r.gitDir;
 	}
 
 	protected static File getUserDirectory() {
@@ -370,12 +370,12 @@ public abstract class Repository implements AutoCloseable {
 	/** If not bare, the index file caching the working file states. */
 	protected File indexFile;
 
-	private File objectDirectory;
+	public File objectDirectory;
 
-	private List<File> alternateObjectDirectories;
+	protected List<File> alternateObjectDirectories;
 
 	/** Directories limiting the search for a Git repository. */
-	private List<File> ceilingDirectories;
+	protected List<File> ceilingDirectories;
 
 	/** True only if the caller wants to force bare behavior. */
 	protected boolean bare;
@@ -383,7 +383,7 @@ public abstract class Repository implements AutoCloseable {
 	/**
 	 * Configuration file of target repository, lazily loaded if required.
 	 */
-	private Config config;
+	protected Config config;
 
 	/**
 	 * Initialize a new repository instance.
@@ -1916,7 +1916,7 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	public void readEnvironment() {
 		SystemReader sr = SystemReader.getInstance();
-		if (getGitDirRB() == null) {
+		if (gitDir == null) {
 			String val = sr.getenv(GIT_DIR_KEY);
 			if (val != null)
 				setGitDirRB(new File(val));
@@ -1936,7 +1936,7 @@ public abstract class Repository implements AutoCloseable {
 			}
 		}
 
-		if (getWorkTreeRB() == null) {
+		if (workTree == null) {
 			String val = sr.getenv(GIT_WORK_TREE_KEY);
 			if (val != null)
 				setWorkTreeRB(new File(val));
@@ -1974,7 +1974,7 @@ public abstract class Repository implements AutoCloseable {
 	 * @return {@code this} (for chaining calls).
 	 */
 	public void findGitDir(File current) {
-		if (getGitDirRB() == null) {
+		if (gitDir == null) {
 			while (current != null) {
 				File dir = new File(current, DOT_GIT);
 				if (FileKey.isGitRepository(dir)) {
@@ -2001,54 +2001,6 @@ public abstract class Repository implements AutoCloseable {
 	}
 
 	/**
-	 * Guess and populate all parameters not already defined.
-	 * <p>
-	 * If an option was not set, the setup method will try to default the option
-	 * based on other options. If insufficient information is available, an
-	 * exception is thrown to the caller.
-	 *
-	 * @return {@code this}
-	 * @throws IllegalArgumentException
-	 *             insufficient parameters were set, or some parameters are
-	 *             incompatible with one another.
-	 * @throws IOException
-	 *             the repository could not be accessed to configure the rest of
-	 *             the builder's parameters.
-	 */
-	public void setup() throws IllegalArgumentException, IOException {
-		if (getGitDirRB() == null && getWorkTreeRB() == null)
-			throw new IllegalArgumentException(
-					JGitText.get().eitherGitDirOrWorkTreeRequired);
-		// No gitDir? Try to assume its under the workTree or a ref to
-		// another
-		// location
-		if (getGitDirRB() == null && getWorkTreeRB() != null) {
-			File dotGit = new File(getWorkTreeRB(), DOT_GIT);
-			if (dotGit.isFile())
-				setGitDirRB(getSymRef(getWorkTreeRB(), dotGit));
-			else
-				setGitDirRB(dotGit);
-		}
-		// If we aren't bare, we should have a work tree.
-		//
-		if (!isBareRB() && getWorkTreeRB() == null)
-			workTree = guessWorkTreeOrFail();
-
-		if (!isBareRB()) {
-			// If after guessing we're still not bare, we must have
-			// a metadata directory to hold the repository. Assume
-			// its at the work tree.
-			//
-			if (getGitDirRB() == null)
-				setGitDirRB(getWorkTreeRB().getParentFile());
-			if (getIndexFileRB() == null)
-				setIndexFileRB(new File(getGitDirRB(), "index")); //$NON-NLS-1$
-		}
-		if (getObjectDirectoryRB() == null && getGitDirRB() != null)
-			setObjectDirectoryRB(FS.DETECTED.resolve(getGitDirRB(), "objects")); //$NON-NLS-1$
-	}
-
-	/**
 	 * Parse and load the repository specific configuration.
 	 * <p>
 	 * The default implementation reads {@code gitDir/config}, or returns an
@@ -2059,14 +2011,14 @@ public abstract class Repository implements AutoCloseable {
 	 *             the configuration is not available.
 	 */
 	protected Config loadConfig() throws IOException {
-		if (getGitDirRB() == null) {
+		if (gitDir == null) {
 			return new Config();
 		}
 		// We only want the repository's configuration file, and not
 		// the user file, as these parameters must be unique to this
 		// repository and not inherited from other files.
 		//
-		File path = FS.DETECTED.resolve(getGitDirRB(), Constants.CONFIG);
+		File path = FS.DETECTED.resolve(gitDir, Constants.CONFIG);
 		FileBasedConfig cfg = new FileBasedConfig(path);
 		try {
 			cfg.load();
@@ -2078,39 +2030,26 @@ public abstract class Repository implements AutoCloseable {
 		return cfg;
 	}
 
-	private File guessWorkTreeOrFail() throws IOException {
+	protected File guessWorkTreeOrFail() throws IOException {
 		if (config == null)
 			config = loadConfig();
-		final Config cfg = config;
 
 		// If set, core.worktree wins.
 		//
-		String path = cfg.getString(CONFIG_CORE_SECTION, null,
+		String path = config.getString(CONFIG_CORE_SECTION, null,
 				CONFIG_KEY_WORKTREE);
 		if (path != null)
-			return FS.DETECTED.resolve(getGitDirRB(), path).getCanonicalFile();
+			return FS.DETECTED.resolve(gitDir, path).getCanonicalFile();
 
-		// If core.bare is set, honor its value. Assume workTree is
-		// the parent directory of the repository.
-		//
-		if (cfg.getString(CONFIG_CORE_SECTION, null, CONFIG_KEY_BARE) != null) {
-			if (cfg.getBoolean(CONFIG_CORE_SECTION, CONFIG_KEY_BARE, true)) {
-				setBareRB();
-				return null;
-			}
-			return getGitDirRB().getParentFile();
+		if ((config.getString(CONFIG_CORE_SECTION, null,
+				CONFIG_KEY_BARE) != null
+				&& !config.getBoolean(CONFIG_CORE_SECTION, CONFIG_KEY_BARE,
+						true))
+				|| (gitDir.getName().equals(DOT_GIT))) {
+			return gitDir.getParentFile();
 		}
-
-		if (getGitDirRB().getName().equals(DOT_GIT)) {
-			// No value for the "bare" flag, but gitDir is named ".git",
-			// use the parent of the directory
-			//
-			return getGitDirRB().getParentFile();
-		}
-
-		// We have to assume we are bare.
-		//
-		setBareRB();
+		setIndexFileRB(null);
+		bare = true;
 		return null;
 	}
 
@@ -2128,11 +2067,6 @@ public abstract class Repository implements AutoCloseable {
 	public void setGitDirRB(File gitDir) {
 		this.gitDir = gitDir;
 		this.config = null;
-	}
-
-	/** @return the meta data directory; null if not set. */
-	public File getGitDirRB() {
-		return gitDir;
 	}
 
 	/**
@@ -2210,11 +2144,6 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	public void setWorkTreeRB(File workTree) {
 		this.workTree = workTree;
-	}
-
-	/** @return the work tree directory, or null if not set. */
-	public File getWorkTreeRB() {
-		return workTree;
 	}
 
 	/**

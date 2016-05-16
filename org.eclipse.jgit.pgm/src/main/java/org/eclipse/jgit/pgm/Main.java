@@ -44,7 +44,6 @@
 
 package org.eclipse.jgit.pgm;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
@@ -285,8 +284,7 @@ public class Main {
 	 */
 	protected Repository openGitDir(String aGitdir) throws IOException {
 		try {
-		return FileRepository.createGitDirEnvRepository(
-				aGitdir != null ? new File(aGitdir) : null);
+			return FileRepository.createGitDirEnvRepository(aGitdir);
 		} catch (IOException e) {
 			throw new Die(CLIText.get().cantFindGitDirectory);
 		}

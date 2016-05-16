@@ -62,7 +62,6 @@ import java.io.UnsupportedEncodingException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.errors.IncorrectObjectTypeException;
 import org.eclipse.jgit.errors.MissingObjectException;
-import org.eclipse.jgit.internal.JGitText;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.CommitBuilder;
 import org.eclipse.jgit.lib.Constants;
@@ -151,8 +150,7 @@ public class T0003_BasicTest extends SampleDataRepositoryTestCase {
 		repo1initial.close();
 
 		File theDir = new File(repo1Parent, Constants.DOT_GIT);
-		FileRepository r = (FileRepository) FileRepository.createRepository(theDir,
-				repo1Parent.getParentFile());
+		FileRepository r = (FileRepository) FileRepository.createRepository(repo1Parent.getParentFile(), theDir, false);
 		assertEqualsPath(theDir, r.getDirectory());
 		assertEqualsPath(repo1Parent.getParentFile(), r.getWorkTree());
 		assertEqualsPath(new File(theDir, "index"), r.getIndexFile());

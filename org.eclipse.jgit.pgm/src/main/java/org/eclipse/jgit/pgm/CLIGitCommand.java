@@ -95,7 +95,7 @@ public class CLIGitCommand extends Main {
 					"System property 'git_work_tree' not specified, using current directory: "
 							+ new File(workDir).getAbsolutePath());
 		}
-		try (Repository db = new FileRepository(workDir + "/.git")) {
+		try (Repository db = new FileRepository(new File(workDir + "/.git"))) {
 			for (String cmd : args) {
 				List<String> result = execute(cmd, db);
 				for (String line : result) {

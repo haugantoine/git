@@ -75,8 +75,6 @@ public class InitCommand implements Callable<Git> {
 		try {
 			Repository repository = FileRepository.createRepository(directory,
 					gitDir, bare);
-			if (!repository.getObjectDatabase().exists())
-				repository.create();
 			return new Git(repository);
 		} catch (IOException e) {
 			throw new JGitInternalException(e.getMessage(), e);
@@ -123,18 +121,15 @@ public class InitCommand implements Callable<Git> {
 
 	private static void validateDirs(File directory, File gitDir, boolean bare)
 			throws IllegalStateException {
-		if (directory != null) {
-			if (bare) {
-				if (gitDir != null && !gitDir.equals(directory))
+		if (directory != null && gitDir != null) {
+			if (bare && !gitDir.equals(directory))
 					throw new IllegalStateException(MessageFormat.format(
 							JGitText.get().initFailedBareRepoDifferentDirs,
 							gitDir, directory));
-			} else {
-				if (gitDir != null && gitDir.equals(directory))
+			if (!bare && gitDir.equals(directory))
 					throw new IllegalStateException(MessageFormat.format(
 							JGitText.get().initFailedNonBareRepoSameDirs,
 							gitDir, directory));
-			}
 		}
 	}
 

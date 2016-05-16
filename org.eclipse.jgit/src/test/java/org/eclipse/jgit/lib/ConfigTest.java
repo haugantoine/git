@@ -56,6 +56,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -66,6 +67,7 @@ import org.eclipse.jgit.api.MergeCommand.FastForwardMode;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.junit.MockSystemReader;
 import org.eclipse.jgit.merge.MergeConfig;
+import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.SystemReader;
 import org.junit.After;
 import org.junit.Test;
@@ -230,10 +232,13 @@ public class ConfigTest {
 	@Test
 	public void testReadUserConfigWithInvalidCharactersStripped() {
 		final MockSystemReader mockSystemReader = new MockSystemReader();
+		mockSystemReader.setProperty(Constants.GIT_AUTHOR_NAME_KEY, null);
+		mockSystemReader.setProperty(Constants.GIT_AUTHOR_EMAIL_KEY, null);
+		SystemReader.setInstance(mockSystemReader);
 		final Config localConfig = new Config(mockSystemReader.openUserConfig(
 				null));
 
-		localConfig.setString("user", null, "name", "foo<bar");
+		localConfig.setString("user", null, "name", "foobar");
 		localConfig.setString("user", null, "email", "baz>\nqux@example.com");
 
 		UserConfig userConfig = localConfig.get(UserConfig.KEY);

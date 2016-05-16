@@ -90,6 +90,7 @@ public class MockSystemReader extends SystemReader {
 	FileBasedConfig systemGitConfig;
 
 	public MockSystemReader() {
+		super();
 		init(Constants.OS_USER_NAME_KEY);
 		init(Constants.GIT_AUTHOR_NAME_KEY);
 		init(Constants.GIT_AUTHOR_EMAIL_KEY);

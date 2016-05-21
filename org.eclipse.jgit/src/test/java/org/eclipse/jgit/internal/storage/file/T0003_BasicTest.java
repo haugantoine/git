@@ -256,9 +256,8 @@ public class T0003_BasicTest extends SampleDataRepositoryTestCase {
 		repo1initial.close();
 
 		File theDir = new File(repo1Parent, Constants.DOT_GIT);
-		FileRepository r = FileRepository.createRepository(indexFile, objDir,
-				altObjDir,
-				theDir);
+		FileRepository r = new FileRepository(indexFile, objDir, altObjDir,
+		theDir);
 		assertEqualsPath(theDir, r.getDirectory());
 		assertEqualsPath(theDir.getParentFile(), r.getWorkTree());
 		assertEqualsPath(indexFile, r.getIndexFile());

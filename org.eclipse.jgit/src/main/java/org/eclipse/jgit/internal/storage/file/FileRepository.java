@@ -118,19 +118,17 @@ import org.eclipse.jgit.util.SystemReader;
  *
  */
 public class FileRepository extends Repository {
-	public static FileRepository createRepository(File indexFile, File objDir,
-			File altObjDir, File theDir) throws IOException {
-		return new FileRepository(indexFile, objDir, altObjDir,
-				theDir); //
-	}
-
 	public static FileRepository createGitDirRepo(File dir) throws IOException {
-		FileRepository r = new FileRepository(); //
-		if (RepositoryCache.FileKey.isGitRepository(dir))
-			r.setGitDir(dir);
-		r.findGitDir(dir);
-		r.setup();
-		return r;
+		String directory = null;
+		if (RepositoryCache.FileKey.isGitRepository(dir)) {
+			directory = dir.getPath();
+		}
+		return createGitDirEnvRepository(directory);
+		// FileRepository r = new FileRepository(); //
+		// r.setGitDir(dir);
+		// r.findGitDir(dir);
+		// r.setup();
+		// return r;
 	}
 
 	public static FileRepository createWorkTreeRepository(File worktree)

@@ -138,18 +138,10 @@ public class FileRepository extends Repository {
 		return r;
 	}
 
-	public static FileRepository createWorkTreeRepository2(File worktree)
+	public static FileRepository createWorkTreeRepository(File worktree)
 			throws IOException {
 		FileRepository r = new FileRepository(); //
 		r.setWorkTree(worktree);
-		r.setup();
-		return r;
-	}
-
-	public static FileRepository createGitDirRepository(File dir)
-			throws IOException {
-		FileRepository r = new FileRepository(); //
-		r.setGitDir(dir);
 		r.setup();
 		return r;
 	}
@@ -160,8 +152,7 @@ public class FileRepository extends Repository {
 		FileRepository r = new FileRepository(); //
 		r.setGitDir(aGitdir != null ? new File(aGitdir) : null); //
 		r.readEnvironment(); //
-		if (r.gitDir == null)
-			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
+		r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
 		if (r.gitDir == null)
 			throw new IOException();
 		r.setup();
@@ -203,8 +194,7 @@ public class FileRepository extends Repository {
 	 * @see FileRepositoryBuilder
 	 */
 	public FileRepository(final File gitDir) throws IOException {
-		this.gitDir = gitDir;
-		setup();
+		this(null, null, null, gitDir);
 	}
 
 	private FileRepository(File directory, File gitdir, boolean isBare)

@@ -125,8 +125,7 @@ public class T0003_BasicTest extends SampleDataRepositoryTestCase {
 		repo1initial.close();
 
 		File theDir = new File(repo1Parent, Constants.DOT_GIT);
-		FileRepository r = (FileRepository) FileRepository
-				.createGitDirRepository(theDir);
+		FileRepository r = (FileRepository) new FileRepository(theDir);
 		assertEqualsPath(theDir, r.getDirectory());
 		assertEqualsPath(repo1Parent, r.getWorkTree());
 		assertEqualsPath(new File(theDir, "index"), r.getIndexFile());
@@ -174,7 +173,7 @@ public class T0003_BasicTest extends SampleDataRepositoryTestCase {
 
 		File theDir = new File(repo1Parent, Constants.DOT_GIT);
 		FileRepository r = (FileRepository) FileRepository
-				.createWorkTreeRepository2(repo1Parent);
+				.createWorkTreeRepository(repo1Parent);
 		assertEqualsPath(theDir, r.getDirectory());
 		assertEqualsPath(repo1Parent, r.getWorkTree());
 		assertEqualsPath(new File(theDir, "index"), r.getIndexFile());
@@ -202,8 +201,7 @@ public class T0003_BasicTest extends SampleDataRepositoryTestCase {
 		repo1initial.close();
 
 		File theDir = new File(repo1Parent, Constants.DOT_GIT);
-		FileRepository r = (FileRepository) FileRepository
-				.createGitDirRepository(theDir);
+		FileRepository r = (FileRepository) new FileRepository(theDir);
 		assertEqualsPath(theDir, r.getDirectory());
 		assertEqualsPath(workdir, r.getWorkTree());
 		assertEqualsPath(new File(theDir, "index"), r.getIndexFile());
@@ -231,8 +229,7 @@ public class T0003_BasicTest extends SampleDataRepositoryTestCase {
 		repo1initial.close();
 
 		File theDir = new File(repo1Parent, Constants.DOT_GIT);
-		FileRepository r = (FileRepository) FileRepository
-				.createGitDirRepository(theDir);
+		FileRepository r = (FileRepository) new FileRepository(theDir);
 		assertEqualsPath(theDir, r.getDirectory());
 		assertEqualsPath(workdir, r.getWorkTree());
 		assertEqualsPath(new File(theDir, "index"), r.getIndexFile());

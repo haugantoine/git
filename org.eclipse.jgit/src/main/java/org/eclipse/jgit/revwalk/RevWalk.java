@@ -159,7 +159,9 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 */
 	static final int TOPO_DELAY = 1 << 5;
 
-	/** Number of flag bits we keep internal for our own use. See above flags. */
+	/**
+	 * Number of flag bits we keep internal for our own use. See above flags.
+	 */
 	static final int RESERVED_FLAGS = 6;
 
 	private static final int APP_FLAGS = -1 & ~((1 << RESERVED_FLAGS) - 1);
@@ -216,8 +218,8 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 *
 	 * @param or
 	 *            the reader the walker will obtain data from. The reader is not
-	 *            closed when the walker is closed (but is closed by {@link
-	 *            #dispose()}.
+	 *            closed when the walker is closed (but is closed by
+	 *            {@link #dispose()}.
 	 */
 	public RevWalk(ObjectReader or) {
 		this(or, false);
@@ -366,8 +368,8 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	/**
 	 * Determine if a commit is reachable from another commit.
 	 * <p>
-	 * A commit <code>base</code> is an ancestor of <code>tip</code> if we
-	 * can find a path of commits that leads from <code>tip</code> and ends at
+	 * A commit <code>base</code> is an ancestor of <code>tip</code> if we can
+	 * find a path of commits that leads from <code>tip</code> and ends at
 	 * <code>base</code>.
 	 * <p>
 	 * This utility function resets the walker, inserts the two supplied
@@ -529,7 +531,7 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 */
 	public void setRevFilter(final RevFilter newFilter) {
 		assertNotStarted();
-		filter = newFilter != null ? newFilter : RevFilter.ALL;
+		filter = newFilter == null ? RevFilter.ALL : newFilter;
 	}
 
 	/**
@@ -549,8 +551,8 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 * will not be simplified.
 	 * <p>
 	 * If non-null and not {@link TreeFilter#ALL} then the tree filter will be
-	 * installed. Commits will have their ancestry simplified to hide commits that
-	 * do not contain tree entries matched by the filter, unless
+	 * installed. Commits will have their ancestry simplified to hide commits
+	 * that do not contain tree entries matched by the filter, unless
 	 * {@code setRewriteParents(false)} is called.
 	 * <p>
 	 * Usually callers should be inserting a filter graph including
@@ -564,7 +566,7 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 */
 	public void setTreeFilter(final TreeFilter newFilter) {
 		assertNotStarted();
-		treeFilter = newFilter != null ? newFilter : TreeFilter.ALL;
+		treeFilter = newFilter == null ? TreeFilter.ALL : newFilter;
 	}
 
 	/**
@@ -572,8 +574,8 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 * <p>
 	 * By default, when {@link #setTreeFilter(TreeFilter)} is called with non-
 	 * null and non-{@link TreeFilter#ALL} filter, commits will have their
-	 * ancestry simplified and parents rewritten to hide commits that do not match
-	 * the filter.
+	 * ancestry simplified and parents rewritten to hide commits that do not
+	 * match the filter.
 	 * <p>
 	 * This behavior can be bypassed by passing false to this method.
 	 *
@@ -608,14 +610,15 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	/**
 	 * Set whether or not the body of a commit or tag is retained.
 	 * <p>
-	 * If a body of a commit or tag is not retained, the application must
-	 * call {@link #parseBody(RevObject)} before the body can be safely
-	 * accessed through the type specific access methods.
+	 * If a body of a commit or tag is not retained, the application must call
+	 * {@link #parseBody(RevObject)} before the body can be safely accessed
+	 * through the type specific access methods.
 	 * <p>
 	 * True by default on {@link RevWalk} and false by default for
 	 * {@link ObjectWalk}.
 	 *
-	 * @param retain true to retain bodies; false to discard them early.
+	 * @param retain
+	 *            true to retain bodies; false to discard them early.
 	 */
 	public void setRetainBody(final boolean retain) {
 		retainBody = retain;
@@ -714,26 +717,27 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 */
 	public RevObject lookupAny(final AnyObjectId id, final int type) {
 		RevObject r = objects.get(id);
-		if (r == null) {
-			switch (type) {
-			case Constants.OBJ_COMMIT:
-				r = createCommit(id);
-				break;
-			case Constants.OBJ_TREE:
-				r = new RevTree(id);
-				break;
-			case Constants.OBJ_BLOB:
-				r = new RevBlob(id);
-				break;
-			case Constants.OBJ_TAG:
-				r = new RevTag(id);
-				break;
-			default:
-				throw new IllegalArgumentException(MessageFormat.format(
-						JGitText.get().invalidGitType, Integer.valueOf(type)));
-			}
-			objects.add(r);
+		if (r != null) {
+			return objects.get(id);
 		}
+		switch (type) {
+		case Constants.OBJ_COMMIT:
+			r = createCommit(id);
+			break;
+		case Constants.OBJ_TREE:
+			r = new RevTree(id);
+			break;
+		case Constants.OBJ_BLOB:
+			r = new RevBlob(id);
+			break;
+		case Constants.OBJ_TAG:
+			r = new RevTag(id);
+			break;
+		default:
+			throw new IllegalArgumentException(MessageFormat.format(
+					JGitText.get().invalidGitType, Integer.valueOf(type)));
+		}
+		objects.add(r);
 		return r;
 	}
 
@@ -801,11 +805,11 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 		final RevTree t;
 		if (c instanceof RevCommit)
 			t = ((RevCommit) c).getTree();
-		else if (!(c instanceof RevTree))
+		else if (c instanceof RevTree)
+			t = (RevTree) c;
+		else
 			throw new IncorrectObjectTypeException(id.toObjectId(),
 					Constants.TYPE_TREE);
-		else
-			t = (RevTree) c;
 		parseHeaders(t);
 		return t;
 	}
@@ -1043,8 +1047,8 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 * @throws IOException
 	 *             a pack file or loose object could not be read.
 	 */
-	public RevObject peel(RevObject obj) throws MissingObjectException,
-			IOException {
+	public RevObject peel(RevObject obj)
+			throws MissingObjectException, IOException {
 		while (obj instanceof RevTag) {
 			parseHeaders(obj);
 			obj = ((RevTag) obj).getObject();
@@ -1073,9 +1077,9 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 
 	int allocFlag() {
 		if (freeFlags == 0)
-			throw new IllegalArgumentException(MessageFormat.format(
-					JGitText.get().flagsAlreadyCreated,
-					Integer.valueOf(32 - RESERVED_FLAGS)));
+			throw new IllegalArgumentException(
+					MessageFormat.format(JGitText.get().flagsAlreadyCreated,
+							Integer.valueOf(32 - RESERVED_FLAGS)));
 		final int m = Integer.lowestOneBit(freeFlags);
 		freeFlags &= ~m;
 		return m;
@@ -1092,9 +1096,11 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 */
 	public void carry(final RevFlag flag) {
 		if ((freeFlags & flag.mask) != 0)
-			throw new IllegalArgumentException(MessageFormat.format(JGitText.get().flagIsDisposed, flag.name));
+			throw new IllegalArgumentException(MessageFormat
+					.format(JGitText.get().flagIsDisposed, flag.name));
 		if (flag.walker != this)
-			throw new IllegalArgumentException(MessageFormat.format(JGitText.get().flagNotFromThis, flag.name));
+			throw new IllegalArgumentException(MessageFormat
+					.format(JGitText.get().flagNotFromThis, flag.name));
 		carryFlags |= flag.mask;
 	}
 
@@ -1128,9 +1134,11 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 */
 	public final void retainOnReset(RevFlag flag) {
 		if ((freeFlags & flag.mask) != 0)
-			throw new IllegalArgumentException(MessageFormat.format(JGitText.get().flagIsDisposed, flag.name));
+			throw new IllegalArgumentException(MessageFormat
+					.format(JGitText.get().flagIsDisposed, flag.name));
 		if (flag.walker != this)
-			throw new IllegalArgumentException(MessageFormat.format(JGitText.get().flagNotFromThis, flag.name));
+			throw new IllegalArgumentException(MessageFormat
+					.format(JGitText.get().flagNotFromThis, flag.name));
 		retainOnReset |= flag.mask;
 	}
 
@@ -1310,8 +1318,8 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	 * Applications must not use both the Iterator and the {@link #next()} API
 	 * at the same time. Pick one API and use that for the entire walk.
 	 * <p>
-	 * If a checked exception is thrown during the walk (see {@link #next()})
-	 * it is rethrown from the Iterator as a {@link RevWalkException}.
+	 * If a checked exception is thrown during the walk (see {@link #next()}) it
+	 * is rethrown from the Iterator as a {@link RevWalkException}.
 	 *
 	 * @return an iterator over this walker's commits.
 	 * @see RevWalkException
@@ -1359,7 +1367,8 @@ public class RevWalk implements Iterable<RevCommit>, AutoCloseable {
 	protected void assertNotStarted() {
 		if (isNotStarted())
 			return;
-		throw new IllegalStateException(JGitText.get().outputHasAlreadyBeenStarted);
+		throw new IllegalStateException(
+				JGitText.get().outputHasAlreadyBeenStarted);
 	}
 
 	private boolean isNotStarted() {

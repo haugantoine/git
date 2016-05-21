@@ -132,7 +132,7 @@ public class FileRepository extends Repository {
 	public static FileRepository createGitDirRepo(File dir) throws IOException {
 		FileRepository r = new FileRepository(); //
 		if (RepositoryCache.FileKey.isGitRepository(dir))
-			r.setGitDirRB(dir);
+			r.setGitDir(dir);
 		r.findGitDir(dir);
 		r.setup();
 		return r;
@@ -141,7 +141,7 @@ public class FileRepository extends Repository {
 	public static FileRepository createWorkTreeRepository2(File worktree)
 			throws IOException {
 		FileRepository r = new FileRepository(); //
-		r.setWorkTreeRB(worktree);
+		r.setWorkTree(worktree);
 		r.setup();
 		return r;
 	}
@@ -149,7 +149,7 @@ public class FileRepository extends Repository {
 	public static FileRepository createGitDirRepository(File dir)
 			throws IOException {
 		FileRepository r = new FileRepository(); //
-		r.setGitDirRB(dir);
+		r.setGitDir(dir);
 		r.setup();
 		return r;
 	}
@@ -158,7 +158,7 @@ public class FileRepository extends Repository {
 			throws IOException {
 
 		FileRepository r = new FileRepository(); //
-		r.setGitDirRB(aGitdir != null ? new File(aGitdir) : null); //
+		r.setGitDir(aGitdir != null ? new File(aGitdir) : null); //
 		r.readEnvironment(); //
 		if (r.gitDir == null)
 			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
@@ -301,8 +301,8 @@ public class FileRepository extends Repository {
 		}
 
 		objectDatabase = new ObjectDirectory(repoConfig, //
-				getObjectDirectoryRB(), //
-				getAlternateObjectDirectoriesRB(), //
+				getObjectDirectory(), //
+				getAlternateObjectDirectories(), //
 				new File(getDirectory(), Constants.SHALLOW));
 
 		if (objectDatabase.exists() && repositoryFormatVersion > 1)
@@ -400,21 +400,21 @@ public class FileRepository extends Repository {
 		}
 		// If we aren't bare, we should have a work tree.
 		//
-		if (!isBareRB() && workTree == null)
+		if (!bare && workTree == null)
 			workTree = guessWorkTreeOrFail();
 
-		if (!isBareRB()) {
+		if (!bare) {
 			// If after guessing we're still not bare, we must have
 			// a metadata directory to hold the repository. Assume
 			// its at the work tree.
 			//
 			if (gitDir == null)
-				setGitDirRB(workTree.getParentFile());
-			if (getIndexFileRB() == null)
-				setIndexFileRB(new File(gitDir, "index")); //$NON-NLS-1$
+				setGitDir(workTree.getParentFile());
+			if (indexFile == null)
+				setIndexFile(new File(gitDir, "index")); //$NON-NLS-1$
 		}
-		if (getObjectDirectoryRB() == null && gitDir != null)
-			setObjectDirectoryRB(FS.DETECTED.resolve(gitDir, "objects")); //$NON-NLS-1$
+		if (getObjectDirectory() == null && gitDir != null)
+			setObjectDirectory(FS.DETECTED.resolve(gitDir, "objects")); //$NON-NLS-1$
 
 		if (StringUtils.isEmptyOrNull(SystemReader.getInstance()
 				.getenv(Constants.GIT_CONFIG_NOSYSTEM_KEY)))
@@ -461,8 +461,8 @@ public class FileRepository extends Repository {
 		}
 
 		objectDatabase = new ObjectDirectory(repoConfig, //
-				getObjectDirectoryRB(), //
-				getAlternateObjectDirectoriesRB(), //
+				getObjectDirectory(), //
+				getAlternateObjectDirectories(), //
 				new File(getDirectory(), Constants.SHALLOW));
 
 		if (objectDatabase.exists() && repositoryFormatVersion > 1)

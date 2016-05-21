@@ -91,7 +91,6 @@ import org.eclipse.jgit.events.IndexChangedListener;
 import org.eclipse.jgit.events.ListenerList;
 import org.eclipse.jgit.events.RepositoryEvent;
 import org.eclipse.jgit.internal.JGitText;
-import org.eclipse.jgit.internal.storage.file.FileRepository;
 import org.eclipse.jgit.lib.RepositoryCache.FileKey;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -337,12 +336,25 @@ public abstract class Repository implements AutoCloseable {
 	}
 
 	public static File getGitDir(File dir) {
-		Repository r = new FileRepository(); //
-		r.setGitDirRB(dir);
-		r.readEnvironment(); //
-		if (r.gitDir == null)
-			r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
-		return r.gitDir;
+		if (dir != null) {
+			return dir;
+		}
+		SystemReader sr = SystemReader.getInstance();
+		String val = sr.getenv(GIT_DIR_KEY);
+		if (val != null) {
+			return new File(val);
+		}
+		List<File> ceilingDirectories = null;
+		val = sr.getenv(GIT_CEILING_DIRECTORIES_KEY);
+		if (val != null) {
+			for (String path : val.split(File.pathSeparator)) {
+				if (ceilingDirectories == null)
+					ceilingDirectories = new LinkedList<File>();
+				ceilingDirectories.add(new File(path));
+			}
+		}
+		return findGitDirectory(new File("").getAbsoluteFile(),
+				ceilingDirectories);
 	}
 
 	protected static File getUserDirectory() {
@@ -1363,7 +1375,7 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	@NonNull
 	public RepositoryState getRepositoryState() {
-		if (isBare() || getDirectory() == null)
+		if (workTree == null || gitDir == null)
 			return RepositoryState.BARE;
 
 		// Pre Git-1.6 logic
@@ -1449,7 +1461,7 @@ public abstract class Repository implements AutoCloseable {
 	 */
 	@NonNull
 	public File getWorkTree() throws NoWorkTreeException {
-		if (isBare())
+		if (workTree == null)
 			throw new NoWorkTreeException();
 		return workTree;
 	}
@@ -1645,7 +1657,7 @@ public abstract class Repository implements AutoCloseable {
 	@Nullable
 	public ObjectId readCherryPickHead()
 			throws IOException, NoWorkTreeException {
-		if (isBare() || getDirectory() == null)
+		if (workTree == null || gitDir == null)
 			throw new NoWorkTreeException();
 
 		byte[] raw = readGitDirectoryFile(Constants.CHERRY_PICK_HEAD);
@@ -1919,40 +1931,40 @@ public abstract class Repository implements AutoCloseable {
 		if (gitDir == null) {
 			String val = sr.getenv(GIT_DIR_KEY);
 			if (val != null)
-				setGitDirRB(new File(val));
+				setGitDir(new File(val));
 		}
 
-		if (getObjectDirectoryRB() == null) {
+		if (getObjectDirectory() == null) {
 			String val = sr.getenv(GIT_OBJECT_DIRECTORY_KEY);
 			if (val != null)
-				setObjectDirectoryRB(new File(val));
+				setObjectDirectory(new File(val));
 		}
 
-		if (getAlternateObjectDirectoriesRB() == null) {
+		if (getAlternateObjectDirectories() == null) {
 			String val = sr.getenv(GIT_ALTERNATE_OBJECT_DIRECTORIES_KEY);
 			if (val != null) {
 				for (String path : val.split(File.pathSeparator))
-					addAlternateObjectDirectoryRB(new File(path));
+					addAlternateObjectDirectory(new File(path));
 			}
 		}
 
 		if (workTree == null) {
 			String val = sr.getenv(GIT_WORK_TREE_KEY);
 			if (val != null)
-				setWorkTreeRB(new File(val));
+				setWorkTree(new File(val));
 		}
 
-		if (getIndexFileRB() == null) {
+		if (indexFile == null) {
 			String val = sr.getenv(GIT_INDEX_FILE_KEY);
 			if (val != null)
-				setIndexFileRB(new File(val));
+				setIndexFile(new File(val));
 		}
 
 		if (ceilingDirectories == null) {
 			String val = sr.getenv(GIT_CEILING_DIRECTORIES_KEY);
 			if (val != null) {
 				for (String path : val.split(File.pathSeparator))
-					addCeilingDirectoryRB(new File(path));
+					addCeilingDirectory(new File(path));
 			}
 		}
 
@@ -1978,17 +1990,17 @@ public abstract class Repository implements AutoCloseable {
 			while (current != null) {
 				File dir = new File(current, DOT_GIT);
 				if (FileKey.isGitRepository(dir)) {
-					setGitDirRB(dir);
+					setGitDir(dir);
 					break;
 				} else if (dir.isFile()) {
 					try {
-						setGitDirRB(getSymRef(current, dir));
+						setGitDir(getSymRef(current, dir));
 						break;
 					} catch (IOException ignored) {
 						// Continue searching if gitdir ref isn't found
 					}
 				} else if (FileKey.isGitRepository(current)) {
-					setGitDirRB(current);
+					setGitDir(current);
 					break;
 				}
 
@@ -2048,7 +2060,7 @@ public abstract class Repository implements AutoCloseable {
 				|| (gitDir.getName().equals(DOT_GIT))) {
 			return gitDir.getParentFile();
 		}
-		setIndexFileRB(null);
+		setIndexFile(null);
 		bare = true;
 		return null;
 	}
@@ -2064,7 +2076,7 @@ public abstract class Repository implements AutoCloseable {
 	 *            {@code GIT_DIR}, the repository meta directory.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public void setGitDirRB(File gitDir) {
+	public void setGitDir(File gitDir) {
 		this.gitDir = gitDir;
 		this.config = null;
 	}
@@ -2077,12 +2089,12 @@ public abstract class Repository implements AutoCloseable {
 	 *            repository's object files are stored.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public void setObjectDirectoryRB(File objectDirectory) {
+	public void setObjectDirectory(File objectDirectory) {
 		this.objectDirectory = objectDirectory;
 	}
 
 	/** @return the object directory; null if not set. */
-	public File getObjectDirectoryRB() {
+	public File getObjectDirectory() {
 		return objectDirectory;
 	}
 
@@ -2096,7 +2108,7 @@ public abstract class Repository implements AutoCloseable {
 	 *            another objects directory to search after the standard one.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public void addAlternateObjectDirectoryRB(File other) {
+	public void addAlternateObjectDirectory(File other) {
 		if (other != null) {
 			if (alternateObjectDirectories == null)
 				alternateObjectDirectories = new LinkedList<File>();
@@ -2107,7 +2119,7 @@ public abstract class Repository implements AutoCloseable {
 	/**
 	 * @return ordered array of alternate directories; null if non were set.
 	 */
-	public File[] getAlternateObjectDirectoriesRB() {
+	public File[] getAlternateObjectDirectories() {
 		if (alternateObjectDirectories == null)
 			return null;
 		return alternateObjectDirectories
@@ -2122,17 +2134,10 @@ public abstract class Repository implements AutoCloseable {
 	 *
 	 * @return {@code this} (for chaining calls).
 	 */
-	public void setBareRB() {
-		setIndexFileRB(null);
-		setWorkTreeRB(null);
+	public void setBare() {
+		setIndexFile(null);
+		setWorkTree(null);
 		bare = true;
-	}
-
-	/**
-	 * @return true if this repository was forced bare by {@link #setBare()} .
-	 */
-	public boolean isBareRB() {
-		return bare;
 	}
 
 	/**
@@ -2142,7 +2147,7 @@ public abstract class Repository implements AutoCloseable {
 	 *            {@code GIT_WORK_TREE}, the working directory of the checkout.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public void setWorkTreeRB(File workTree) {
+	public void setWorkTree(File workTree) {
 		this.workTree = workTree;
 	}
 
@@ -2157,13 +2162,8 @@ public abstract class Repository implements AutoCloseable {
 	 *            {@code GIT_INDEX_FILE}, the index file location.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public void setIndexFileRB(File indexFile) {
+	public void setIndexFile(File indexFile) {
 		this.indexFile = indexFile;
-	}
-
-	/** @return the index file location, or null if not set. */
-	public File getIndexFileRB() {
-		return indexFile;
 	}
 
 	/**
@@ -2176,7 +2176,7 @@ public abstract class Repository implements AutoCloseable {
 	 *            a path to stop searching at; its parent will not be searched.
 	 * @return {@code this} (for chaining calls).
 	 */
-	public void addCeilingDirectoryRB(File root) {
+	public void addCeilingDirectory(File root) {
 		if (root != null) {
 			if (ceilingDirectories == null)
 				ceilingDirectories = new LinkedList<File>();

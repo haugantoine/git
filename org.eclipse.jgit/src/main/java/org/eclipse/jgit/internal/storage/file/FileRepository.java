@@ -118,11 +118,6 @@ import org.eclipse.jgit.util.SystemReader;
  *
  */
 public class FileRepository extends Repository {
-	public static FileRepository createRepository(File directory, File gitDir,
-			boolean bare) throws IOException {
-		return new FileRepository(directory, gitDir, bare);
-	}
-
 	public static FileRepository createRepository(File indexFile, File objDir,
 			File altObjDir, File theDir) throws IOException {
 		return new FileRepository(indexFile, objDir, altObjDir,
@@ -197,7 +192,7 @@ public class FileRepository extends Repository {
 		this(null, null, null, gitDir);
 	}
 
-	private FileRepository(File directory, File gitdir, boolean isBare)
+	public FileRepository(File directory, File gitdir, boolean isBare)
 			throws IOException {
 		this.bare = isBare;
 		SystemReader sr = SystemReader.getInstance();
@@ -302,8 +297,6 @@ public class FileRepository extends Repository {
 
 		if (!isBare())
 			snapshot = FileSnapshot.save(getIndexFile());
-		if (!objectDatabase.exists())
-			create();
 	}
 
 	private FileBasedConfig getEmptySystemConfig() {

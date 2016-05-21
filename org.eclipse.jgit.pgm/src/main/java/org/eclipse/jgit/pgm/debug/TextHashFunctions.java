@@ -63,6 +63,7 @@ import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.MutableObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.pgm.Command;
 import org.eclipse.jgit.pgm.TextBuiltin;
 import org.eclipse.jgit.pgm.internal.CLIText;
@@ -275,7 +276,11 @@ class TextHashFunctions extends TextBuiltin {
 		}
 
 		for (File dir : gitDirs) {
-			Repository db = FileRepository.createGitDirRepo(dir);
+			File dir1 = dir;
+			if (!RepositoryCache.FileKey.isGitRepository(dir1)) {
+				dir1 = null;
+			}
+			Repository db = FileRepository.createGitDirEnvRepository(dir1);
 			try {
 				run(db);
 			} finally {

@@ -84,7 +84,6 @@ import org.eclipse.jgit.lib.RefDatabase;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.ReflogReader;
 import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryCache;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
 import org.eclipse.jgit.util.FileUtils;
@@ -118,19 +117,6 @@ import org.eclipse.jgit.util.SystemReader;
  *
  */
 public class FileRepository extends Repository {
-	public static FileRepository createGitDirRepo(File dir) throws IOException {
-		String directory = null;
-		if (RepositoryCache.FileKey.isGitRepository(dir)) {
-			directory = dir.getPath();
-		}
-		return createGitDirEnvRepository(directory);
-		// FileRepository r = new FileRepository(); //
-		// r.setGitDir(dir);
-		// r.findGitDir(dir);
-		// r.setup();
-		// return r;
-	}
-
 	public static FileRepository createWorkTreeRepository(File worktree)
 			throws IOException {
 		FileRepository r = new FileRepository(); //
@@ -139,11 +125,11 @@ public class FileRepository extends Repository {
 		return r;
 	}
 
-	public static FileRepository createGitDirEnvRepository(String aGitdir)
+	public static FileRepository createGitDirEnvRepository(File aGitdir)
 			throws IOException {
 
 		FileRepository r = new FileRepository(); //
-		r.setGitDir(aGitdir != null ? new File(aGitdir) : null); //
+		r.setGitDir(aGitdir); //
 		r.readEnvironment(); //
 		r.findGitDir(new File("").getAbsoluteFile()); //$NON-NLS-1$
 		if (r.gitDir == null)
